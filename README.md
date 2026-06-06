@@ -1,4 +1,4 @@
-# Money Budget Web App v3
+# Money Budget Web App v4
 
 Local-first personal budget tracker.
 
@@ -32,3 +32,19 @@ Replace these files in your repository:
 - icon-512.png
 
 After deployment, refresh the iPhone Safari page once or twice. If the Home Screen app still shows the old version, close it from the app switcher and reopen it.
+
+
+## v4 Apple Pay / Shortcuts link support
+
+Shortcut-friendly URLs are now supported:
+
+- Open Add Expense page:
+  https://jnikhanj.github.io/my-budget/?add=1
+
+- Open Add Expense with pre-filled fields:
+  https://jnikhanj.github.io/my-budget/?add=1&amount=12.50&merchant=Woolworths&category=Groceries&payment=Apple%20Pay
+
+- Auto-save after Shortcut prompts:
+  https://jnikhanj.github.io/my-budget/?save=1&amount=12.50&merchant=Woolworths&category=Groceries&payment=Apple%20Pay
+
+Recommended initial automation: use ?add=1 so you can confirm before saving.

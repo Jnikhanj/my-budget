@@ -108,6 +108,74 @@ function renderSettings() {
 }
 function fillCategorySelects() { $("categoryInput").innerHTML = state.categories.map(c => `<option value="${c.id}">${c.icon} ${escapeHtml(c.name)}</option>`).join(""); }
 function prepareAddForm() { $("expenseForm").reset(); $("dateInput").value = todayISO(); $("paymentInput").value = "Apple Pay"; fillCategorySelects(); setTimeout(() => $("amountInput").focus(), 120); }
+
+function cleanAmount(value) {
+  if (!value) return 0;
+  const cleaned = String(value).replace(/[^0-9.\-]/g, "");
+  return Number(cleaned || 0);
+}
+function categoryIdFromParam(value) {
+  if (!value) return state.categories[0]?.id;
+  const normalised = String(value).trim().toLowerCase();
+  const matched = state.categories.find(c => c.name.toLowerCase() === normalised);
+  return matched?.id || state.categories[0]?.id;
+}
+function prefillAddFromParams(params) {
+  prepareAddForm();
+  const amount = params.get("amount") || params.get("total") || "";
+  const merchant = params.get("merchant") || params.get("description") || params.get("name") || "";
+  const category = params.get("category") || "";
+  const payment = params.get("payment") || "Apple Pay";
+  const date = params.get("date") || todayISO();
+  const note = params.get("note") || "";
+
+  if (amount) $("amountInput").value = cleanAmount(amount) || "";
+  if (merchant) $("merchantInput").value = merchant;
+  if (category) $("categoryInput").value = categoryIdFromParam(category);
+  if (payment) $("paymentInput").value = payment;
+  if (date) $("dateInput").value = date;
+  if (note) $("noteInput").value = note;
+}
+function addExpenseFromParams(params) {
+  const amount = cleanAmount(params.get("amount") || params.get("total"));
+  const merchant = (params.get("merchant") || params.get("description") || params.get("name") || "Apple Pay transaction").trim();
+  if (!amount || amount <= 0) return false;
+  const categoryId = categoryIdFromParam(params.get("category"));
+  const category = state.categories.find(c => c.id === categoryId) || state.categories[0];
+  const expense = {
+    id: crypto.randomUUID(),
+    amount,
+    merchant,
+    categoryId: category.id,
+    categoryName: category.name,
+    payment: params.get("payment") || "Apple Pay",
+    date: params.get("date") || todayISO(),
+    note: params.get("note") || "Logged from Apple Pay shortcut",
+    createdAt: Date.now()
+  };
+  state.expenses.push(expense);
+  saveState();
+  renderAll();
+  return true;
+}
+function handleShortcutLink() {
+  const params = new URLSearchParams(window.location.search);
+  const wantsAdd = params.has("add") || params.has("quickadd") || params.has("save") || params.has("autosave");
+  if (!wantsAdd) return;
+
+  const shouldSave = params.has("save") || params.get("autosave") === "1";
+  if (shouldSave) {
+    const saved = addExpenseFromParams(params);
+    route("dashboard");
+    showToast(saved ? "Expense saved" : "Enter amount to save");
+  } else {
+    prefillAddFromParams(params);
+    route("add");
+  }
+
+  window.history.replaceState({}, document.title, window.location.pathname);
+}
+
 function route(name) { document.body.dataset.route = name; document.querySelectorAll(".screen").forEach(screen => screen.classList.remove("is-active")); $(`screen-${name}`).classList.add("is-active"); document.querySelectorAll(".nav-button").forEach(btn => btn.classList.toggle("is-active", btn.dataset.route === name)); window.scrollTo({ top: 0, behavior: "smooth" }); }
 function showToast(message) { const toast = $("toast"); toast.textContent = message; toast.classList.add("show"); setTimeout(() => toast.classList.remove("show"), 1900); }
 function escapeHtml(value) { return String(value ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[ch])); }
@@ -133,4 +201,4 @@ function wireEvents() {
   $("resetData").addEventListener("click", () => { if (!confirm("Delete all budget data stored in this browser?")) return; localStorage.removeItem(STORAGE_KEY); state = loadState(); renderAll(); route("dashboard"); showToast("Data reset"); });
 }
 if ("serviceWorker" in navigator) { window.addEventListener("load", () => { navigator.serviceWorker.register("service-worker.js").catch(() => {}); }); }
-wireEvents(); fillCategorySelects(); $("dateInput").value = todayISO(); renderAll();
+wireEvents(); fillCategorySelects(); $("dateInput").value = todayISO(); renderAll(); handleShortcutLink();
