@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#05070d" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Money" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="style.css" />
+  <title>Money Budget</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <button class="pill account-pill" id="accountButton" type="button">
+        <span class="avatar-dot">●</span>
+        <span>Personal</span>
+      </button>
+      <div class="top-actions">
+        <button class="chip" type="button" id="currencyButton">A$</button>
+        <button class="round-button" type="button" data-route="settings" aria-label="Settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Zm7.43-2.2c.05-.42.07-.84.07-1.3s-.02-.88-.07-1.3l2.05-1.6-2-3.46-2.42.98a8.2 8.2 0 0 0-2.25-1.3L14.45 2h-4.9l-.36 3.32a8.2 8.2 0 0 0-2.25 1.3l-2.42-.98-2 3.46 2.05 1.6c-.05.42-.07.84-.07 1.3s.02.88.07 1.3l-2.05 1.6 2 3.46 2.42-.98a8.2 8.2 0 0 0 2.25 1.3l.36 3.32h4.9l.36-3.32a8.2 8.2 0 0 0 2.25-1.3l2.42.98 2-3.46-2.05-1.6Z"/></svg>
+        </button>
+        <button class="round-button" type="button" data-route="analytics" aria-label="Analytics">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V9h3v11H5Zm5.5 0V4h3v16h-3Zm5.5 0v-7h3v7h-3Z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="screen is-active" id="screen-dashboard">
+        <section class="hero-panel">
+          <div class="hero-copy">
+            <div class="eyebrow">Total spent in <span>budget period</span></div>
+            <div class="hero-amount" id="spentAmount">A$0</div>
+            <div class="mini-line" id="sparkline"></div>
+          </div>
+          <div class="budget-card">
+            <div class="donut" id="budgetDonut"><span id="budgetPercent">0%</span></div>
+            <div>
+              <div class="budget-left" id="budgetLeft">A$0 left in budget</div>
+              <div class="budget-note" id="budgetNote">Set a budget to get started.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-block">
+          <div class="section-heading">
+            <h2>Spending by category</h2>
+            <button class="ghost-button" type="button" data-route="analytics">View all</button>
+          </div>
+          <div class="category-list" id="categoryList"></div>
+        </section>
+
+        <section class="section-block">
+          <div class="section-heading">
+            <h2>Recent transactions</h2>
+            <button class="ghost-button" type="button" data-route="history">History</button>
+          </div>
+          <div class="transaction-list" id="recentTransactions"></div>
+        </section>
+      </section>
+
+      <section class="screen" id="screen-analytics">
+        <div class="subpage-header">
+          <button class="back-button" type="button" data-route="dashboard" aria-label="Back">‹</button>
+          <h1>Analytics</h1>
+        </div>
+
+        <section class="glass-card analytics-card">
+          <div class="card-label">Spending</div>
+          <div class="analytics-amount" id="analyticsSpent">A$0</div>
+          <div class="bar-chart" id="weeklyChart"></div>
+        </section>
+
+        <section class="glass-card">
+          <div class="section-heading compact">
+            <h2>Spending by</h2>
+            <select id="analyticsSort" class="small-select">
+              <option value="category">Category</option>
+              <option value="amount">Amount</option>
+              <option value="count">Count</option>
+            </select>
+          </div>
+          <div class="category-list" id="analyticsCategories"></div>
+        </section>
+
+        <section class="glass-card">
+          <div class="section-heading compact">
+            <h2>Budget</h2>
+          </div>
+          <div class="budget-detail-row">
+            <div class="donut small" id="detailDonut"><span id="detailPercent">0%</span></div>
+            <div>
+              <div class="budget-left" id="detailLeft">A$0 left</div>
+              <div class="budget-note" id="detailPeriod">This month</div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="screen" id="screen-history">
+        <div class="subpage-header">
+          <button class="back-button" type="button" data-route="dashboard" aria-label="Back">‹</button>
+          <h1>History</h1>
+        </div>
+        <div class="search-row">
+          <input id="searchInput" type="search" placeholder="Search merchant, note, category" autocomplete="off" />
+          <select id="historyCategoryFilter">
+            <option value="">All</option>
+          </select>
+        </div>
+        <div class="transaction-list full" id="historyList"></div>
+      </section>
+
+      <section class="screen" id="screen-settings">
+        <div class="subpage-header">
+          <button class="back-button" type="button" data-route="dashboard" aria-label="Back">‹</button>
+          <h1>Settings</h1>
+        </div>
+
+        <section class="glass-card settings-card">
+          <label class="field-label" for="monthlyBudget">Monthly budget</label>
+          <div class="money-input">
+            <span>A$</span>
+            <input id="monthlyBudget" type="number" min="0" step="0.01" inputmode="decimal" />
+          </div>
+
+          <label class="field-label" for="budgetStartDay">Budget starts on day of month</label>
+          <input id="budgetStartDay" type="number" min="1" max="28" step="1" inputmode="numeric" />
+
+          <button class="primary-button full-width" id="saveSettings" type="button">Save settings</button>
+        </section>
+
+        <section class="glass-card settings-card">
+          <h2>Data</h2>
+          <p class="muted">Data is stored in this browser on this phone. Export a backup regularly.</p>
+          <div class="grid-two">
+            <button class="secondary-button" id="exportJson" type="button">Export backup</button>
+            <label class="secondary-button file-label" for="importJson">Import backup</label>
+            <input id="importJson" class="hidden-file" type="file" accept="application/json,.json" />
+            <button class="secondary-button" id="exportCsv" type="button">Export CSV</button>
+            <button class="danger-button" id="resetData" type="button">Reset all</button>
+          </div>
+        </section>
+
+        <section class="glass-card settings-card">
+          <h2>Categories</h2>
+          <div class="category-edit-list" id="categoryEditList"></div>
+          <div class="add-category-row">
+            <input id="newCategoryName" type="text" placeholder="New category name" />
+            <button class="secondary-button" id="addCategory" type="button">Add</button>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <button type="button" data-route="dashboard" class="nav-button is-active">
+        <span>⌂</span><small>Home</small>
+      </button>
+      <button type="button" data-route="analytics" class="nav-button">
+        <span>▥</span><small>Analytics</small>
+      </button>
+      <button type="button" class="add-fab" id="openAdd">+</button>
+      <button type="button" data-route="history" class="nav-button">
+        <span>☰</span><small>History</small>
+      </button>
+      <button type="button" data-route="settings" class="nav-button">
+        <span>⚙</span><small>Settings</small>
+      </button>
+    </nav>
+  </div>
+
+  <dialog class="add-dialog" id="addDialog">
+    <form method="dialog" class="add-form" id="expenseForm">
+      <div class="dialog-handle"></div>
+      <div class="form-header">
+        <div>
+          <div class="card-label">New transaction</div>
+          <h2>Add expense</h2>
+        </div>
+        <button type="button" class="close-button" id="closeAdd">×</button>
+      </div>
+
+      <label class="field-label" for="amountInput">Amount</label>
+      <div class="big-money-input">
+        <span>A$</span>
+        <input id="amountInput" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" required />
+      </div>
+
+      <label class="field-label" for="merchantInput">Merchant / description</label>
+      <input id="merchantInput" type="text" placeholder="e.g. Woolworths, Hungry Jacks" autocomplete="off" required />
+
+      <label class="field-label" for="categoryInput">Category</label>
+      <select id="categoryInput" required></select>
+
+      <div class="grid-two">
+        <div>
+          <label class="field-label" for="paymentInput">Payment</label>
+          <select id="paymentInput">
+            <option>Apple Pay</option>
+            <option>Card</option>
+            <option>Cash</option>
+            <option>Bank transfer</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label" for="dateInput">Date</label>
+          <input id="dateInput" type="date" required />
+        </div>
+      </div>
+
+      <label class="field-label" for="noteInput">Note</label>
+      <input id="noteInput" type="text" placeholder="Optional" autocomplete="off" />
+
+      <button class="primary-button full-width" type="submit">Save expense</button>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
