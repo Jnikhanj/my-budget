@@ -1,39 +1,34 @@
-# Money Budget Web App
+# Money Budget Web App v3
 
-Private, local-first budget tracker inspired by the screenshots you shared.
+Local-first personal budget tracker.
 
-## What it does
-- Dashboard with monthly spending, remaining budget, progress ring and category breakdown
-- Add expense screen
-- Analytics screen
-- Transaction history with search/filter
-- Settings for budget and categories
-- Export JSON backup
-- Import JSON backup
-- Export CSV
-- Stores data locally in the browser using localStorage
+## v3 changes
+- Stronger blue/purple background gradient
+- Home cumulative spending sparkline in the previously empty area
+- Cleaner Home top line: "Total spent in this budget period"
+- History and Analytics are now clean tab screens without back buttons or the top account/action bar
+- More compact History search/filter row
+- Slimmer category and transaction cards
+- Analytics graph now uses coloured gradient bars
+- Fixed "Spending by category" header alignment
+- Add Expense is now a full page instead of a floating modal/bottom sheet
+- Add Expense uses a single-column form with full-width Payment and Date fields
+- Bottom navigation icons are now consistent line-style icons
+- Service worker cache bumped to v3
 
-## Important privacy note
-The app has no account, no server, and no subscription. Spending data stays in the browser/device where you use it.
+## Data safety
+The storage key is unchanged: moneyBudget.v1
 
-Export a JSON backup regularly, because deleting Safari website data or changing browsers can remove the local data.
+Existing expenses should remain on the same device/browser.
 
-## Quick test on Mac
-Unzip this folder, then open Terminal in the folder and run:
+## Update GitHub
+Replace these files in your repository:
+- index.html
+- style.css
+- app.js
+- manifest.json
+- service-worker.js
+- icon-192.png
+- icon-512.png
 
-python3 -m http.server 8080
-
-Open:
-http://localhost:8080
-
-## iPhone use
-Best free long-term option:
-1. Put these files on any free static host you control.
-2. Open the site in Safari on iPhone.
-3. Share button > Add to Home Screen.
-
-Data still stays on the iPhone browser storage, not on the host.
-
-## Shortcut / Apple Pay idea
-A Shortcut can open this app after an Apple Pay transaction, but the web app cannot automatically read Apple Pay details.
-Use the Shortcut to open the app, then tap + and enter the expense.
+After deployment, refresh the iPhone Safari page once or twice. If the Home Screen app still shows the old version, close it from the app switcher and reopen it.
