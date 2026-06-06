@@ -147,25 +147,23 @@ function renderSparkline() {
     if (idx >= 0 && idx < values.length) values[idx] += Number(expense.amount || 0);
   }
 
+  if (!expenses.length) {
+    $("sparkline").innerHTML = "";
+    return;
+  }
+
   let cumulative = 0;
   const cumulativeValues = values.map(v => cumulative += v);
   const max = Math.max(1, ...cumulativeValues, Number(state.monthlyBudget || 0));
   const points = cumulativeValues.map((v, i) => {
     const x = (i / Math.max(1, days - 1)) * 100;
-    const y = 96 - (v / max) * 70;
+    const y = 46 - (v / max) * 30;
     return `${x},${y}`;
   }).join(" ");
 
   $("sparkline").innerHTML = `
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="lineFill" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stop-color="rgba(255,255,255,0.22)" />
-          <stop offset="100%" stop-color="rgba(255,255,255,0)" />
-        </linearGradient>
-      </defs>
-      <polyline points="${points}" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-      <polygon points="0,100 ${points} 100,100" fill="url(#lineFill)" />
+    <svg viewBox="0 0 100 52" preserveAspectRatio="none">
+      <polyline points="${points}" fill="none" stroke="rgba(255,255,255,0.84)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
     </svg>`;
 }
 

@@ -22,10 +22,10 @@
       <div class="top-actions">
         <button class="chip" type="button" id="currencyButton">A$</button>
         <button class="round-button" type="button" data-route="settings" aria-label="Settings">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Zm7.43-2.2c.05-.42.07-.84.07-1.3s-.02-.88-.07-1.3l2.05-1.6-2-3.46-2.42.98a8.2 8.2 0 0 0-2.25-1.3L14.45 2h-4.9l-.36 3.32a8.2 8.2 0 0 0-2.25 1.3l-2.42-.98-2 3.46 2.05 1.6c-.05.42-.07.84-.07 1.3s.02.88.07 1.3l-2.05 1.6 2 3.46 2.42-.98a8.2 8.2 0 0 0 2.25 1.3l.36 3.32h4.9l.36-3.32a8.2 8.2 0 0 0 2.25-1.3l2.42.98 2-3.46-2.05-1.6Z"/></svg>
+          <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.04.04a2 2 0 0 1-2.83 2.83l-.04-.04a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 0 1-4 0v-.07a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.04.04a2 2 0 1 1-2.83-2.83l.04-.04A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 0 1 0-4h.07A1.7 1.7 0 0 0 4.6 8.4a1.7 1.7 0 0 0-.34-1.88l-.04-.04A2 2 0 1 1 7.05 3.65l.04.04a1.7 1.7 0 0 0 1.88.34H9a1.7 1.7 0 0 0 1-1.56V2a2 2 0 0 1 4 0v.07a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.04-.04a2 2 0 1 1 2.83 2.83l-.04.04A1.7 1.7 0 0 0 19.4 8.4v.03A1.7 1.7 0 0 0 21 10h.07a2 2 0 0 1 0 4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg>
         </button>
         <button class="round-button" type="button" data-route="analytics" aria-label="Analytics">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V9h3v11H5Zm5.5 0V4h3v16h-3Zm5.5 0v-7h3v7h-3Z"/></svg>
+          <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16V9"/><path d="M12 16V6"/><path d="M16 16v-5"/></svg>
         </button>
       </div>
     </header>
@@ -34,7 +34,7 @@
       <section class="screen is-active" id="screen-dashboard">
         <section class="hero-panel">
           <div class="hero-copy">
-            <div class="eyebrow">Total spent in <span>budget period</span></div>
+            <div class="eyebrow">Total spent in this budget period</div>
             <div class="hero-amount" id="spentAmount">A$0</div>
             <div class="mini-line" id="sparkline"></div>
           </div>
@@ -160,17 +160,19 @@
 
     <nav class="bottom-nav">
       <button type="button" data-route="dashboard" class="nav-button is-active">
-        <span>⌂</span><small>Home</small>
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.8 12 3l9 7.8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg><small>Home</small>
       </button>
       <button type="button" data-route="analytics" class="nav-button">
-        <span>▥</span><small>Analytics</small>
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16V9"/><path d="M12 16V6"/><path d="M16 16v-5"/></svg><small>Analytics</small>
       </button>
-      <button type="button" class="add-fab" id="openAdd">+</button>
+      <button type="button" class="add-fab" id="openAdd" aria-label="Add expense">
+        <svg class="add-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+      </button>
       <button type="button" data-route="history" class="nav-button">
-        <span>☰</span><small>History</small>
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M5 12h14"/><path d="M5 17h14"/></svg><small>History</small>
       </button>
       <button type="button" data-route="settings" class="nav-button">
-        <span>⚙</span><small>Settings</small>
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.04.04a2 2 0 0 1-2.83 2.83l-.04-.04a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 0 1-4 0v-.07a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.04.04a2 2 0 1 1-2.83-2.83l.04-.04A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 0 1 0-4h.07A1.7 1.7 0 0 0 4.6 8.4a1.7 1.7 0 0 0-.34-1.88l-.04-.04A2 2 0 1 1 7.05 3.65l.04.04a1.7 1.7 0 0 0 1.88.34H9a1.7 1.7 0 0 0 1-1.56V2a2 2 0 0 1 4 0v.07a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.04-.04a2 2 0 1 1 2.83 2.83l-.04.04A1.7 1.7 0 0 0 19.4 8.4v.03A1.7 1.7 0 0 0 21 10h.07a2 2 0 0 1 0 4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg><small>Settings</small>
       </button>
     </nav>
   </div>
