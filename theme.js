@@ -86,20 +86,12 @@
   if (typeof document === "undefined") return;
   if (typeof state === "undefined" || typeof saveState !== "function" || typeof renderAll !== "function") return;
 
+  const pasteInput = document.getElementById("pasteInput");
+  if (pasteInput) pasteInput.removeAttribute("placeholder");
+
   const style = document.createElement("style");
   style.textContent = `
     .editable-transaction-row { cursor: pointer; }
-    .transaction-actions-inline { display: grid; justify-items: end; gap: 5px; }
-    .transaction-edit-pill {
-      border: 1px solid var(--line);
-      background: rgba(255,255,255,0.72);
-      color: var(--muted);
-      border-radius: 999px;
-      min-height: 26px;
-      padding: 0 10px;
-      font-size: 12px;
-      font-weight: 760;
-    }
     .tx-modal-backdrop {
       position: fixed;
       inset: 0;
@@ -343,23 +335,12 @@
           <div class="row-title">${safe(expense.merchant)}</div>
           <div class="row-subtitle">${safe(formattedDate(expense.date))} · ${safe(expenseCategory(expense))}</div>
         </div>
-        <div class="transaction-actions-inline">
-          <div class="row-amount">${typeof money === "function" ? money(expense.amount) : safe(expense.amount)}</div>
-          <button class="transaction-edit-pill" type="button" data-edit-transaction="${safe(expense.id)}">Edit</button>
-        </div>
+        <div class="row-amount">${typeof money === "function" ? money(expense.amount) : safe(expense.amount)}</div>
       </div>
     `).join("");
   };
 
   document.addEventListener("click", event => {
-    const editButton = event.target.closest("[data-edit-transaction]");
-    if (editButton) {
-      event.preventDefault();
-      event.stopPropagation();
-      openEditor(editButton.dataset.editTransaction);
-      return;
-    }
-
     const row = event.target.closest(".editable-transaction-row");
     if (row) {
       event.preventDefault();
