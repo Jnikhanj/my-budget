@@ -1,50 +1,23 @@
-# Money Budget Web App v4
+# Money Budget Web App v5
 
 Local-first personal budget tracker.
 
-## v3 changes
-- Stronger blue/purple background gradient
-- Home cumulative spending sparkline in the previously empty area
-- Cleaner Home top line: "Total spent in this budget period"
-- History and Analytics are now clean tab screens without back buttons or the top account/action bar
-- More compact History search/filter row
-- Slimmer category and transaction cards
-- Analytics graph now uses coloured gradient bars
-- Fixed "Spending by category" header alignment
-- Add Expense is now a full page instead of a floating modal/bottom sheet
-- Add Expense uses a single-column form with full-width Payment and Date fields
-- Bottom navigation icons are now consistent line-style icons
-- Service worker cache bumped to v3
+## v5 changes
+- Switched to a clean light finance-app design.
+- Removed Apple Pay shortcut/deep-link behaviour.
+- Removed payment method from Add Transaction and new transaction records.
+- Added merchant suggestions while typing.
+- Added automatic category suggestion from previous entries and keyword rules.
+- Added Paste Transactions screen with review-before-save.
+- Kept local storage key unchanged: moneyBudget.v1
 
-## Data safety
-The storage key is unchanged: moneyBudget.v1
-
-Existing expenses should remain on the same device/browser.
-
-## Update GitHub
-Replace these files in your repository:
+## Replace on GitHub
+Replace:
 - index.html
 - style.css
 - app.js
 - manifest.json
 - service-worker.js
+- README.md
 - icon-192.png
 - icon-512.png
-
-After deployment, refresh the iPhone Safari page once or twice. If the Home Screen app still shows the old version, close it from the app switcher and reopen it.
-
-
-## v4 Apple Pay / Shortcuts link support
-
-Shortcut-friendly URLs are now supported:
-
-- Open Add Expense page:
-  https://jnikhanj.github.io/my-budget/?add=1
-
-- Open Add Expense with pre-filled fields:
-  https://jnikhanj.github.io/my-budget/?add=1&amount=12.50&merchant=Woolworths&category=Groceries&payment=Apple%20Pay
-
-- Auto-save after Shortcut prompts:
-  https://jnikhanj.github.io/my-budget/?save=1&amount=12.50&merchant=Woolworths&category=Groceries&payment=Apple%20Pay
-
-Recommended initial automation: use ?add=1 so you can confirm before saving.
