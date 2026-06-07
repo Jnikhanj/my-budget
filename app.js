@@ -35,14 +35,20 @@ const parseDate = (value) => {
 
 let state = loadState();
 let detectedTransactions = [];
-let editorState = { amount: "", merchant: "", category: "", note: "", date: "" };
+let formData = {
+  amount: "",
+  merchant: "",
+  categoryId: "",
+  note: "",
+  date: todayISO()
+};
 
 function loadState() {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try { return normalizeLoadedState(JSON.parse(saved)); } catch {}
   }
-  return normalizeLoadedState({ monthlyBudget: 2800, categories: categoryDefaults, expenses: [] });
+  return normalizeLoadedState({ monthlyBudget: 2800, categories: categoryDefaults, expenses: [], categoryBudgets: {}, recurringBills: [] });
 }
 
 function normalizeLoadedState(parsed) {
@@ -61,8 +67,33 @@ function normalizeLoadedState(parsed) {
   return {
     monthlyBudget: Number(parsed.monthlyBudget ?? 2800),
     categories,
-    expenses
+    expenses,
+    categoryBudgets: normalizeCategoryBudgets(parsed.categoryBudgets, categories),
+    recurringBills: normalizeRecurringBills(parsed.recurringBills, categories)
   };
+}
+
+function normalizeCategoryBudgets(existing = {}, categories = []) {
+  return categories.reduce((budgets, category) => {
+    const value = Number(existing?.[category.id] || 0);
+    if (Number.isFinite(value) && value > 0) budgets[category.id] = value;
+    return budgets;
+  }, {});
+}
+
+function normalizeRecurringBills(existing = [], categories = []) {
+  return (existing || []).map(bill => {
+    const categoryId = bill.categoryId && categories.some(c => c.id === bill.categoryId)
+      ? bill.categoryId
+      : categories.find(c => c.name === "Bills")?.id || categories[0]?.id;
+    return {
+      id: bill.id || crypto.randomUUID(),
+      name: String(bill.name || "").trim(),
+      amount: Number(bill.amount || 0),
+      day: Math.min(31, Math.max(1, Number(bill.day || 1))),
+      categoryId
+    };
+  }).filter(bill => bill.name && bill.amount > 0);
 }
 
 function ensureCategories(existing = []) {
@@ -196,6 +227,10 @@ function budgetStatus() {
   return { spent, budget, left, usedPercent };
 }
 
+function recurringTotal() {
+  return (state.recurringBills || []).reduce((sum, bill) => sum + Number(bill.amount || 0), 0);
+}
+
 function renderAll() {
   renderHome();
   renderHistory();
@@ -208,16 +243,16 @@ function renderHome() {
   const status = budgetStatus();
   $("leftAmount").textContent = money(status.left);
   $("budgetProgress").style.width = `${status.usedPercent}%`;
-  $("summaryLine").textContent = `${money(status.spent)} of ${money(status.budget)} spent · ${daysLeftInMonth()} days left`;
+  $("summaryLine").textContent = `${money(status.spent)} spent · ${daysLeftInMonth()} days left`;
 
   const expenses = currentExpenses().sort(byNewest);
-  $("homeListTotal").textContent = `${money(total(expenses))} · ${expenses.length} txns`;
+  $("homeListTotal").textContent = `${expenses.length} transaction${expenses.length === 1 ? "" : "s"}`;
   renderTransactions($("homeTransactions"), expenses.slice(0, 8));
 }
 
 function renderTransactions(container, rows) {
   if (!rows.length) {
-    container.innerHTML = `<div class="empty-card">No transactions yet.</div>`;
+    container.innerHTML = `<div class="empty-card">No transactions</div>`;
     return;
   }
 
@@ -250,25 +285,52 @@ function renderHistory() {
 function renderAnalytics() {
   const status = budgetStatus();
   $("analyticsSpent").textContent = money(status.spent);
-  $("budgetMiniText").textContent = `${money(status.left)} left`;
+  $("budgetMiniText").textContent = `${money(status.left)} available`;
   $("budgetMiniPercent").textContent = `${Math.round(status.usedPercent)}%`;
   renderWeeklyChart();
+  renderInsights();
 
   const cats = categoryTotals();
   const sortBy = $("analyticsSort").value;
   if (sortBy === "category") cats.sort((a, b) => a.name.localeCompare(b.name));
   if (sortBy === "count") cats.sort((a, b) => b.count - a.count);
 
-  $("analyticsCategories").innerHTML = cats.length ? cats.map(row => `
-    <div class="transaction-row">
-      <div class="category-icon" style="background:${row.color || "#eceef2"}">${row.icon || "•"}</div>
+  $("analyticsCategories").innerHTML = cats.length ? cats.map(row => {
+    const budget = Number(state.categoryBudgets?.[row.id] || 0);
+    const percent = budget > 0 ? Math.min(100, (row.amount / budget) * 100) : 0;
+    const subtitle = budget > 0 ? `${money(row.amount)} of ${money(budget)}` : `${row.count} transaction${row.count === 1 ? "" : "s"}`;
+    return `
+    <div class="category-budget-row">
+      <div class="category-icon">${categoryInitial(row.name)}</div>
       <div>
         <div class="row-title">${escapeHtml(row.name)}</div>
-        <div class="row-subtitle">${row.count} txn${row.count === 1 ? "" : "s"}</div>
+        <div class="row-subtitle">${subtitle}</div>
+        ${budget > 0 ? `<div class="mini-progress"><span style="width:${percent}%"></span></div>` : ""}
       </div>
       <div class="row-amount">${money(row.amount)}</div>
     </div>
-  `).join("") : `<div class="empty-card">No category spending yet.</div>`;
+  `}).join("") : `<div class="empty-card">No category spending</div>`;
+}
+
+function categoryInitial(name) {
+  return String(name || "?").trim().slice(0, 2).toUpperCase();
+}
+
+function renderInsights() {
+  const cats = categoryTotals();
+  const top = cats[0];
+  const weeklyAverage = total() / Math.max(1, Math.ceil(new Date().getDate() / 7));
+  const recurring = recurringTotal();
+  $("analyticsInsights").innerHTML = [
+    { label: "Top category", value: top ? top.name : "None" },
+    { label: "Weekly average", value: money(weeklyAverage) },
+    { label: "Recurring", value: money(recurring) }
+  ].map(item => `
+    <div class="insight-item">
+      <div class="kicker">${item.label}</div>
+      <div>${escapeHtml(item.value)}</div>
+    </div>
+  `).join("");
 }
 
 function renderWeeklyChart() {
@@ -292,10 +354,20 @@ function renderSettings() {
 
   $("categoryEditList").innerHTML = state.categories.map(category => `
     <div class="category-edit-row">
-      <div>${category.icon} ${escapeHtml(category.name)}</div>
+      <div>${escapeHtml(category.name)}</div>
       <button class="text-button" type="button" data-delete-category="${category.id}">Remove</button>
     </div>
   `).join("");
+
+  $("categoryBudgetList").innerHTML = state.categories.map(category => `
+    <label class="budget-row">
+      <span>${escapeHtml(category.name)}</span>
+      <input data-category-budget="${category.id}" type="text" inputmode="decimal" placeholder="No limit" value="${state.categoryBudgets?.[category.id] || ""}" />
+    </label>
+  `).join("");
+
+  $("billCategory").innerHTML = state.categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
+  renderBillList();
 
   const filter = $("historyCategoryFilter");
   const currentValue = filter.value;
@@ -304,28 +376,59 @@ function renderSettings() {
 }
 
 function fillCategorySelects() {
-  const options = state.categories.map(c => `<option value="${c.id}">${c.icon} ${escapeHtml(c.name)}</option>`).join("");
+  const options = state.categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
   $("categoryInput").innerHTML = options;
-  if (editorState.category) $("categoryInput").value = editorState.category;
 }
 
-function clearAddEditor() {
-  editorState = { amount: "", merchant: "", category: "", note: "", date: todayISO() };
-  $("amountInput").value = "";
-  $("merchantInput").value = "";
-  $("noteInput").value = "";
-  $("dateInput").value = todayISO();
-  fillCategorySelects();
+function renderBillList() {
+  const bills = [...(state.recurringBills || [])].sort((a, b) => a.day - b.day || a.name.localeCompare(b.name));
+  $("billList").innerHTML = bills.length ? bills.map(bill => {
+    const category = categoryById(bill.categoryId);
+    return `
+      <div class="bill-row">
+        <div>
+          <div class="row-title">${escapeHtml(bill.name)}</div>
+          <div class="row-subtitle">Day ${bill.day} · ${escapeHtml(category?.name || "Bills")}</div>
+        </div>
+        <div class="bill-actions">
+          <strong>${money(bill.amount)}</strong>
+          <button class="text-button" type="button" data-delete-bill="${bill.id}">Remove</button>
+        </div>
+      </div>
+    `;
+  }).join("") : `<div class="empty-card">No recurring bills</div>`;
+}
+
+function syncFormToUI() {
+  $("amountInput").value = formData.amount;
+  $("merchantInput").value = formData.merchant;
+  $("noteInput").value = formData.note;
+  $("dateInput").value = formData.date;
+  if (formData.categoryId) $("categoryInput").value = formData.categoryId;
+}
+
+function resetForm() {
+  formData = {
+    amount: "",
+    merchant: "",
+    categoryId: "",
+    note: "",
+    date: todayISO()
+  };
   const other = categoryByName("Other") || state.categories[0];
-  if (other) {
-    $("categoryInput").value = other.id;
-    editorState.category = other.id;
-  }
+  if (other) formData.categoryId = other.id;
+  syncFormToUI();
   $("merchantSuggestions").classList.remove("show");
 }
 
 function openAddEditor() {
-  clearAddEditor();
+  if (document.body.dataset.route === "add") {
+    syncAmountFromInput();
+    route("add");
+    return;
+  }
+
+  resetForm();
   route("add");
   setTimeout(() => {
     $("amountInput").focus();
@@ -355,8 +458,32 @@ function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[ch]));
 }
 
+function parseAmount(value) {
+  const valueText = String(value || "").replace(/,/g, ".").replace(/[^\d.]/g, "");
+  const firstDot = valueText.indexOf(".");
+  const normalized = firstDot === -1
+    ? valueText
+    : valueText.slice(0, firstDot + 1) + valueText.slice(firstDot + 1).replace(/\./g, "");
+  const valueNumber = Number(normalized || 0);
+  return Number.isFinite(valueNumber) && valueNumber > 0 ? valueNumber : 0;
+}
+
+function cleanAmountInput(value) {
+  const cleaned = String(value || "").replace(/,/g, ".").replace(/[^\d.]/g, "");
+  const firstDot = cleaned.indexOf(".");
+  return firstDot === -1
+    ? cleaned
+    : cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, "");
+}
+
+function syncAmountFromInput() {
+  const currentAmount = cleanAmountInput($("amountInput").value);
+  if (currentAmount || !formData.amount) formData.amount = currentAmount;
+  $("amountInput").value = formData.amount;
+}
+
 function amountInputValue() {
-  const value = Number($("amountInput").value || 0);
+  const value = parseAmount(formData.amount);
   return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
@@ -367,26 +494,28 @@ function saveManualTransaction() {
   saveInProgress = true;
 
   try {
-    const category = categoryById($("categoryInput").value) || categoryByName("Other") || state.categories[0];
+    const amount = amountInputValue();
+    const merchant = formData.merchant.trim();
+    const category = categoryById(formData.categoryId) || categoryByName("Other") || state.categories[0];
     const expense = {
       id: crypto.randomUUID(),
-      amount: amountInputValue(),
-      merchant: $("merchantInput").value.trim(),
+      amount,
+      merchant,
       categoryId: category.id,
       categoryName: category.name,
-      date: $("dateInput").value || todayISO(),
-      note: $("noteInput").value.trim(),
+      date: formData.date || todayISO(),
+      note: formData.note.trim(),
       createdAt: Date.now()
     };
 
     if (!expense.amount || expense.amount <= 0) {
-      showToast("Add amount");
+      showToast("Enter an amount");
       saveInProgress = false;
       return;
     }
 
     if (!expense.merchant) {
-      showToast("Add merchant");
+      showToast("Enter a merchant");
       saveInProgress = false;
       return;
     }
@@ -394,9 +523,9 @@ function saveManualTransaction() {
     state.expenses.push(expense);
     saveState();
     renderAll();
-    clearAddEditor();
+    resetForm();
     route("home");
-    showToast("Transaction saved");
+    showToast("Saved");
   } finally {
     setTimeout(() => { saveInProgress = false; }, 250);
   }
@@ -495,7 +624,7 @@ function renderReview() {
       </div>
       <div class="review-grid">
         <select data-review-field="categoryId">
-          ${state.categories.map(c => `<option value="${c.id}" ${c.id === item.categoryId ? "selected" : ""}>${c.icon} ${escapeHtml(c.name)}</option>`).join("")}
+          ${state.categories.map(c => `<option value="${c.id}" ${c.id === item.categoryId ? "selected" : ""}>${escapeHtml(c.name)}</option>`).join("")}
         </select>
         <input data-review-field="date" type="date" value="${item.date}" />
       </div>
@@ -533,18 +662,32 @@ function wireEvents() {
     route(targetRoute);
   }));
 
-  // Track editor input changes to preserve state
-  $("amountInput").addEventListener("input", () => {
-    editorState.amount = $("amountInput").value;
+  $("cancelAdd").addEventListener("click", event => {
+    event.preventDefault();
+    $("merchantSuggestions").classList.remove("show");
+    route("home");
   });
 
-  $("merchantInput").addEventListener("input", () => {
-    editorState.merchant = $("merchantInput").value;
-    const suggestions = merchantSuggestions($("merchantInput").value);
-    const cat = suggestCategoryForMerchant($("merchantInput").value);
+  $("amountInput").addEventListener("input", event => {
+    formData.amount = cleanAmountInput(event.target.value);
+    if (event.target.value !== formData.amount) event.target.value = formData.amount;
+  });
+  $("amountInput").addEventListener("change", syncAmountFromInput);
+  $("amountInput").addEventListener("blur", syncAmountFromInput);
+
+  $("amountInput").addEventListener("keydown", event => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    $("merchantInput").focus();
+  });
+
+  $("merchantInput").addEventListener("input", event => {
+    formData.merchant = event.target.value;
+    const suggestions = merchantSuggestions(formData.merchant);
+    const cat = suggestCategoryForMerchant(formData.merchant);
     if (cat) {
       $("categoryInput").value = cat;
-      editorState.category = cat;
+      formData.categoryId = cat;
     }
 
     if (!suggestions.length) {
@@ -562,28 +705,41 @@ function wireEvents() {
     $("merchantSuggestions").classList.add("show");
   });
 
+  function selectMerchantSuggestion(item) {
+    if (!item) return;
+    formData.merchant = item.dataset.merchant;
+    formData.categoryId = item.dataset.category;
+    syncFormToUI();
+    $("merchantSuggestions").classList.remove("show");
+    $("merchantInput").focus();
+  }
+
+  $("merchantSuggestions").addEventListener("pointerdown", event => {
+    const item = event.target.closest(".suggestion-item");
+    if (!item) return;
+    event.preventDefault();
+    selectMerchantSuggestion(item);
+  });
+
   $("merchantSuggestions").addEventListener("click", event => {
     const item = event.target.closest(".suggestion-item");
     if (!item) return;
-    $("merchantInput").value = item.dataset.merchant;
-    editorState.merchant = item.dataset.merchant;
-    $("categoryInput").value = item.dataset.category;
-    editorState.category = item.dataset.category;
-    $("merchantSuggestions").classList.remove("show");
+    event.preventDefault();
+    selectMerchantSuggestion(item);
   });
 
   $("merchantInput").addEventListener("blur", () => setTimeout(() => $("merchantSuggestions").classList.remove("show"), 180));
 
-  $("categoryInput").addEventListener("change", () => {
-    editorState.category = $("categoryInput").value;
+  $("categoryInput").addEventListener("change", event => {
+    formData.categoryId = event.target.value;
   });
 
-  $("noteInput").addEventListener("input", () => {
-    editorState.note = $("noteInput").value;
+  $("noteInput").addEventListener("input", event => {
+    formData.note = event.target.value;
   });
 
-  $("dateInput").addEventListener("change", () => {
-    editorState.date = $("dateInput").value;
+  $("dateInput").addEventListener("change", event => {
+    formData.date = event.target.value;
   });
 
   $("saveTransaction").addEventListener("click", event => {
@@ -614,7 +770,7 @@ function wireEvents() {
   $("saveDetected").addEventListener("click", () => {
     const valid = detectedTransactions.filter(t => t.merchant && Number(t.amount) > 0);
     if (!valid.length) {
-      showToast("Nothing to save");
+      showToast("No valid transactions found");
       return;
     }
 
@@ -634,7 +790,7 @@ function wireEvents() {
     saveState();
     renderAll();
     route("home");
-    showToast(`${valid.length} transactions saved`);
+    showToast(`${valid.length} saved`);
   });
 
   $("analyticsSort").addEventListener("change", renderAnalytics);
@@ -645,7 +801,45 @@ function wireEvents() {
     state.monthlyBudget = Number($("monthlyBudget").value || 0);
     saveState();
     renderAll();
-    showToast("Settings saved");
+    showToast("Saved");
+  });
+
+  $("saveCategoryBudgets").addEventListener("click", () => {
+    state.categoryBudgets = {};
+    document.querySelectorAll("[data-category-budget]").forEach(input => {
+      const value = parseAmount(input.value);
+      if (value > 0) state.categoryBudgets[input.dataset.categoryBudget] = value;
+    });
+    saveState();
+    renderAll();
+    showToast("Category budgets saved");
+  });
+
+  $("addBill").addEventListener("click", () => {
+    const name = $("billName").value.trim();
+    const amount = parseAmount($("billAmount").value);
+    const day = Math.min(31, Math.max(1, Number($("billDay").value || 1)));
+    if (!name) {
+      showToast("Enter a bill name");
+      return;
+    }
+    if (!amount) {
+      showToast("Enter an amount");
+      return;
+    }
+    state.recurringBills.push({
+      id: crypto.randomUUID(),
+      name,
+      amount,
+      day,
+      categoryId: $("billCategory").value
+    });
+    $("billName").value = "";
+    $("billAmount").value = "";
+    $("billDay").value = "";
+    saveState();
+    renderAll();
+    showToast("Bill added");
   });
 
   $("addCategory").addEventListener("click", () => {
@@ -664,12 +858,22 @@ function wireEvents() {
     if (!id) return;
     const used = state.expenses.some(e => e.categoryId === id);
     if (used) {
-      showToast("Category has transactions");
+      showToast("This category is in use");
       return;
     }
     state.categories = state.categories.filter(c => c.id !== id);
+    delete state.categoryBudgets[id];
     saveState();
     renderAll();
+  });
+
+  $("billList").addEventListener("click", event => {
+    const id = event.target.dataset.deleteBill;
+    if (!id) return;
+    state.recurringBills = state.recurringBills.filter(bill => bill.id !== id);
+    saveState();
+    renderAll();
+    showToast("Bill removed");
   });
 
   $("exportJson").addEventListener("click", () => download(`money-budget-backup-${todayISO()}.json`, JSON.stringify(state, null, 2), "application/json"));
@@ -685,7 +889,7 @@ function wireEvents() {
       route("home");
       showToast("Backup imported");
     } catch {
-      showToast("Could not import file");
+      showToast("Import failed");
     } finally {
       event.target.value = "";
     }
