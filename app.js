@@ -356,11 +356,8 @@ function escapeHtml(value) {
 }
 
 function amountInputValue() {
-  const raw = String($("amountInput").value || "").replace(/,/g, ".").replace(/[^\d.]/g, "");
-  const parts = raw.split(".");
-  const normalised = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join("")}` : raw;
-  const value = Number(normalised);
-  return Number.isFinite(value) ? value : 0;
+  const value = Number($("amountInput").value || 0);
+  return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
 let saveInProgress = false;
@@ -597,19 +594,6 @@ function wireEvents() {
   $("saveTransaction").addEventListener("touchend", event => {
     event.preventDefault();
     saveManualTransaction();
-  });
-
-  ["amountInput", "merchantInput", "noteInput"].forEach((id, idx, ids) => {
-    $(id).addEventListener("keydown", event => {
-      if (event.key !== "Enter") return;
-      event.preventDefault();
-      if (id === "noteInput") {
-        $("noteInput").blur();
-        return;
-      }
-      const nextId = ids[idx + 1] || "noteInput";
-      $(nextId).focus();
-    });
   });
 
   $("detectTransactions").addEventListener("click", () => {

@@ -355,6 +355,11 @@ select {
 .amount-field span, .money-input span { font-size: 29px; font-weight: 770; }
 .amount-field input, .money-input input { border: 0; background: transparent; padding-left: 0; }
 .amount-field input { min-height: 60px; font-size: 34px; font-weight: 760; letter-spacing: -0.05em; }
+.amount-field input::-webkit-outer-spin-button,
+.amount-field input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
 
 .suggest-wrap { position: relative; }
 .suggestions {
