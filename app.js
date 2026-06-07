@@ -459,6 +459,45 @@ function toCsv() {
   return [header.join(","), ...lines].join("\n");
 }
 
+
+let lastSaveAttemptAt = 0;
+
+function saveExpense() {
+  const now = Date.now();
+  if (now - lastSaveAttemptAt < 450) return;
+  lastSaveAttemptAt = now;
+
+  const category = categoryById($("categoryInput").value);
+  const expense = {
+    id: crypto.randomUUID(),
+    amount: Number($("amountInput").value),
+    merchant: $("merchantInput").value.trim(),
+    categoryId: category.id,
+    categoryName: category.name,
+    date: $("dateInput").value || todayISO(),
+    note: $("noteInput").value.trim(),
+    createdAt: Date.now()
+  };
+
+  if (!expense.amount || expense.amount <= 0 || !expense.merchant) {
+    showToast("Add amount and merchant");
+    return;
+  }
+
+  state.expenses.push(expense);
+  saveState();
+  renderAll();
+  route("home");
+  showToast("Transaction saved");
+}
+
+function handleSaveAction(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  saveExpense();
+}
 function wireEvents() {
   document.querySelectorAll("[data-route]").forEach(btn => btn.addEventListener("click", () => route(btn.dataset.route)));
 
@@ -492,40 +531,26 @@ function wireEvents() {
 
   $("merchantInput").addEventListener("blur", () => setTimeout(() => $("merchantSuggestions").classList.remove("show"), 180));
 
-  $("expenseForm").addEventListener("keydown", event => {
-    if (event.key === "Enter") {
+  const expenseForm = $("expenseForm");
+
+  expenseForm.addEventListener("submit", event => {
+    event.preventDefault();
+    saveExpense();
+  });
+
+  expenseForm.addEventListener("keydown", event => {
+    const tagName = String(event.target.tagName || "").toLowerCase();
+    if (event.key === "Enter" && tagName !== "textarea") {
       event.preventDefault();
       const fields = ["amountInput", "merchantInput", "categoryInput", "dateInput", "noteInput"].map(id => $(id));
       const index = fields.indexOf(document.activeElement);
       if (index >= 0 && index < fields.length - 1) fields[index + 1].focus();
-      else $("saveTransaction").focus();
+      else saveExpense();
     }
   });
 
-  $("saveTransaction").addEventListener("click", () => {
-    const category = categoryById($("categoryInput").value);
-    const expense = {
-      id: crypto.randomUUID(),
-      amount: Number($("amountInput").value),
-      merchant: $("merchantInput").value.trim(),
-      categoryId: category.id,
-      categoryName: category.name,
-      date: $("dateInput").value,
-      note: $("noteInput").value.trim(),
-      createdAt: Date.now()
-    };
-
-    if (!expense.amount || expense.amount <= 0 || !expense.merchant) {
-      showToast("Add amount and merchant");
-      return;
-    }
-
-    state.expenses.push(expense);
-    saveState();
-    renderAll();
-    route("home");
-    showToast("Transaction saved");
-  });
+  $("saveTransaction").addEventListener("click", handleSaveAction);
+  $("saveTransaction").addEventListener("touchend", handleSaveAction, { passive: false });
 
   $("detectTransactions").addEventListener("click", () => {
     detectedTransactions = parsePastedTransactions($("pasteInput").value);

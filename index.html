@@ -74,7 +74,7 @@
           <span></span>
         </header>
 
-        <section class="form-card" id="expenseForm">
+        <form class="form-card" id="expenseForm" action="javascript:void(0)" novalidate>
           <label class="field-label" for="amountInput">Amount</label>
           <div class="amount-field">
             <span>$</span>
@@ -96,8 +96,8 @@
           <label class="field-label" for="noteInput">Note</label>
           <input id="noteInput" type="text" placeholder="Optional" autocomplete="off" />
 
-          <button class="primary-button full-width" id="saveTransaction" type="button">Save transaction</button>
-        </section>
+          <button class="primary-button full-width" id="saveTransaction" type="submit">Save transaction</button>
+        </form>
       </section>
 
       <section class="screen page-screen" id="screen-paste">

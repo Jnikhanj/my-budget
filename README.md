@@ -1,3 +1,14 @@
+# Money Budget Web App v5.5
+
+## Hotfix
+- Fixes Add Transaction save button not saving on iPhone.
+- Uses a normal form submit plus an explicit click/touch save handler.
+- Pressing Next/Enter moves through fields instead of refreshing/resetting.
+- Storage key remains unchanged: moneyBudget.v1
+
+## Replace on GitHub
+Replace all files in this package, then wait for GitHub Pages deployment.
+
 # Money Budget Web App v5.3
 
 ## Changes
