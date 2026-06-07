@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#f3f4f8" />
+  <meta name="theme-color" content="#f7f7f5" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Money" />
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icon-192.png" />
-  <link rel="stylesheet" href="style.css?v=5.9" />
+  <link rel="stylesheet" href="style.css?v=6.0" />
   <title>Money Budget</title>
 </head>
 <body data-route="home">
@@ -23,9 +23,9 @@
               <path d="M4 17h2"/><path d="M10 17h10"/><circle cx="8" cy="17" r="2"/>
             </svg>
           </button>
-          <button class="budget-pill" type="button" aria-label="Budget">
+          <button class="budget-pill" type="button" aria-label="Monthly budget">
             <span class="mini-dollar">$</span>
-            <span>Budget</span>
+            <span>Overview</span>
             <svg class="chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           <button class="circle-button" type="button" data-route="analytics" aria-label="Analytics">
@@ -35,7 +35,7 @@
 
         <section class="summary-block">
           <div class="summary-row">
-            <div class="kicker">LEFT FROM BUDGET</div>
+            <div class="kicker">Available</div>
             <button class="currency-pill" type="button">AUD</button>
           </div>
           <div class="hero-number" id="leftAmount">$0</div>
@@ -48,19 +48,19 @@
         <section class="quick-actions">
           <button class="action-row" type="button" data-route="add">
             <span class="action-icon">＋</span>
-            <span>Add transaction</span>
+            <span>New transaction</span>
             <span class="row-arrow">›</span>
           </button>
           <button class="action-row" type="button" data-route="paste">
             <span class="action-icon">↧</span>
-            <span>Paste transactions</span>
+            <span>Import transactions</span>
             <span class="row-arrow">›</span>
           </button>
         </section>
 
         <section class="list-section">
           <div class="list-heading">
-            <div class="kicker">THIS MONTH</div>
+            <div class="kicker">Recent transactions</div>
             <div class="heading-total" id="homeListTotal">$0 · 0 txns</div>
           </div>
           <div class="transaction-list" id="homeTransactions"></div>
@@ -69,8 +69,8 @@
 
       <section class="screen page-screen" id="screen-add">
         <header class="page-header">
-          <button class="text-button" type="button" data-route="home">Cancel</button>
-          <h1>Add transaction</h1>
+          <button class="text-button" id="cancelAdd" type="button" data-route="home">Cancel</button>
+          <h1>New transaction</h1>
           <span></span>
         </header>
 
@@ -81,9 +81,9 @@
             <input id="amountInput" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" />
           </div>
 
-          <label class="field-label" for="merchantInput">Merchant / description</label>
+          <label class="field-label" for="merchantInput">Merchant</label>
           <div class="suggest-wrap">
-            <input id="merchantInput" type="text" placeholder="e.g. Woolworths, Hungry Jacks" autocomplete="off" />
+            <input id="merchantInput" type="text" placeholder="Name or description" autocomplete="off" />
             <div class="suggestions" id="merchantSuggestions"></div>
           </div>
 
@@ -96,30 +96,30 @@
           <label class="field-label" for="noteInput">Note</label>
           <input id="noteInput" type="text" placeholder="Optional" autocomplete="off" />
 
-          <button class="primary-button full-width" id="saveTransaction" type="button">Save transaction</button>
+          <button class="primary-button full-width" id="saveTransaction" type="button">Save</button>
         </section>
       </section>
 
       <section class="screen page-screen" id="screen-paste">
         <header class="page-header">
           <button class="text-button" type="button" data-route="home">Cancel</button>
-          <h1>Paste transactions</h1>
+          <h1>Import transactions</h1>
           <span></span>
         </header>
 
         <section class="form-card">
           <p class="helper-text">Paste copied bank text. Dates, merchants and amounts will be detected where possible.</p>
           <textarea id="pasteInput" rows="8" placeholder="7 Jun 2026&#10;H Js Devonport&#10;-$2.00&#10;7 Jun&#10;Dominos&#10;-$21.26"></textarea>
-          <button class="primary-button full-width" id="detectTransactions" type="button">Detect transactions</button>
+          <button class="primary-button full-width" id="detectTransactions" type="button">Review import</button>
         </section>
 
         <section class="review-section" id="reviewSection" hidden>
           <div class="list-heading">
-            <div class="kicker">REVIEW</div>
+            <div class="kicker">Review</div>
             <div class="heading-total" id="reviewCount">0 detected</div>
           </div>
           <div id="reviewList"></div>
-          <button class="primary-button full-width" id="saveDetected" type="button">Save detected transactions</button>
+          <button class="primary-button full-width" id="saveDetected" type="button">Save selected</button>
         </section>
       </section>
 
@@ -142,14 +142,16 @@
         </header>
 
         <section class="analytics-card">
-          <div class="kicker">SPENDING THIS MONTH</div>
+          <div class="kicker">Monthly spending</div>
           <div class="analytics-number" id="analyticsSpent">$0</div>
           <div class="bar-chart" id="weeklyChart"></div>
         </section>
 
+        <section class="insight-grid" id="analyticsInsights"></section>
+
         <section class="list-section">
           <div class="list-heading">
-            <div class="kicker">SPENDING BY CATEGORY</div>
+            <div class="kicker">Categories</div>
             <select id="analyticsSort" class="small-select">
               <option value="amount">Amount</option>
               <option value="category">Category</option>
@@ -186,13 +188,34 @@
           <div class="setting-row">
             <div>
               <h2>Appearance</h2>
-              <p class="helper-text compact">Light or dark, whichever feels better.</p>
+              <p class="helper-text compact">Choose a quiet mode and accent.</p>
             </div>
             <button class="theme-toggle" id="themeToggle" type="button" aria-pressed="false">
               <span class="theme-toggle-dot"></span>
               <span id="themeToggleText">Auto</span>
             </button>
           </div>
+          <div class="accent-picker" id="accentPicker" aria-label="Accent colour"></div>
+        </section>
+
+        <section class="form-card">
+          <h2>Category budgets</h2>
+          <p class="helper-text">Set optional monthly limits for key categories.</p>
+          <div class="budget-list" id="categoryBudgetList"></div>
+          <button class="secondary-button full-width" id="saveCategoryBudgets" type="button">Save category budgets</button>
+        </section>
+
+        <section class="form-card">
+          <h2>Recurring bills</h2>
+          <p class="helper-text">Track regular commitments before the month gets away from you.</p>
+          <div class="recurring-grid">
+            <input id="billName" type="text" placeholder="Name" autocomplete="off" />
+            <input id="billAmount" type="text" inputmode="decimal" placeholder="Amount" autocomplete="off" />
+            <select id="billCategory"></select>
+            <input id="billDay" type="number" min="1" max="31" placeholder="Day" />
+          </div>
+          <button class="secondary-button full-width" id="addBill" type="button">Add bill</button>
+          <div class="bill-list" id="billList"></div>
         </section>
 
         <section class="form-card">
@@ -246,8 +269,7 @@
   </div>
 
   <div class="toast" id="toast"></div>
-  <script src="app.js?v=5.9"></script>
-  <script src="amount-hotfix.js?v=5.9"></script>
-  <script src="theme.js?v=5.9"></script>
+  <script src="app.js?v=6.0"></script>
+  <script src="theme.js?v=6.0"></script>
 </body>
 </html>
