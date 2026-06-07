@@ -514,17 +514,6 @@ select {
   margin-top: 13px;
 }
 
-
-body[data-route="add"] .bottom-nav,
-body[data-route="paste"] .bottom-nav {
-  display: none;
-}
-
-body[data-route="add"] .app-shell,
-body[data-route="paste"] .app-shell {
-  padding-bottom: calc(env(safe-area-inset-bottom) + 24px);
-}
-
 .bottom-nav {
   position: fixed;
   left: 50%;
@@ -574,6 +563,16 @@ body[data-route="paste"] .app-shell {
 }
 
 .nav-add-icon { width: 24px; height: 24px; }
+
+body[data-route="add"] .bottom-nav,
+body[data-route="paste"] .bottom-nav {
+  display: none;
+}
+
+body[data-route="add"] .app-shell,
+body[data-route="paste"] .app-shell {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 24px);
+}
 
 .toast {
   position: fixed;

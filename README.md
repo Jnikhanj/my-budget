@@ -1,31 +1,14 @@
-# Money Budget Web App v5.5
+# Money Budget Web App v5.6
 
 ## Hotfix
-- Fixes Add Transaction save button not saving on iPhone.
-- Uses a normal form submit plus an explicit click/touch save handler.
-- Pressing Next/Enter moves through fields instead of refreshing/resetting.
-- Storage key remains unchanged: moneyBudget.v1
-
-## Replace on GitHub
-Replace all files in this package, then wait for GitHub Pages deployment.
-
-# Money Budget Web App v5.3
-
-## Changes
-- Categories are back for Add Transaction, Paste Transaction review, Analytics and Settings.
-- Categories are not shown on the Home screen.
-- Paste Transactions now detects dates from common formats:
-  - 7 Jun 2026
-  - 7 Jun
-  - 07/06/2026
-  - 07/06
-  - 07-06-2026
-- Calendar-month days-left logic retained.
-- Budget start day setting removed.
-- Settings icon replaced with a proper sliders/tune icon.
-- Home layout made slightly more compact.
-- This month summary now shows "txns".
-- Existing storage key unchanged: moneyBudget.v1
+- Fixed Add Transaction field reset/glitch on iPhone.
+- Amount field now uses a text/decimal input parser instead of iOS number input.
+- Save Transaction uses explicit click/touch handling and form-submit fallback.
+- Pressing Enter/Next moves through fields instead of refreshing/resetting.
+- Add/Paste screens hide bottom nav.
+- Categories remain available for Add, Paste review, Analytics and Settings.
+- Categories are still not shown on Home.
+- Storage key unchanged: moneyBudget.v1
 
 ## Replace on GitHub
 Replace:
@@ -37,11 +20,3 @@ Replace:
 - README.md
 - icon-192.png
 - icon-512.png
-
-
-## v5.4 hotfix
-- Fixed Add Transaction glitch by removing implicit form submission.
-- Save is now handled only by the Save transaction button.
-- Pressing Enter/Next moves focus instead of clearing the screen.
-- Bottom navigation is hidden on Add/Paste screens to prevent accidental re-opening/resetting.
-- Cache bumped to v5.4.
