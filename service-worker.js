@@ -1,10 +1,11 @@
-const CACHE_NAME = "money-budget-cache-v5-8";
+const CACHE_NAME = "money-budget-cache-v5-9";
 const ASSETS = [
   "./",
   "./index.html",
-  "./style.css",
-  "./app.js",
-  "./amount-hotfix.js",
+  "./style.css?v=5.9",
+  "./app.js?v=5.9",
+  "./amount-hotfix.js?v=5.9",
+  "./theme.js?v=5.9",
   "./manifest.json",
   "./service-worker.js",
   "./icon-192.png",
