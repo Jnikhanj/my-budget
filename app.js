@@ -307,12 +307,20 @@ function fillCategorySelects() {
   $("categoryInput").innerHTML = options;
 }
 
-function prepareAddForm() {
-  $("expenseForm").reset();
+function clearAddEditor() {
+  $("amountInput").value = "";
+  $("merchantInput").value = "";
+  $("noteInput").value = "";
   $("dateInput").value = todayISO();
   fillCategorySelects();
+  const other = categoryByName("Other") || state.categories[0];
+  if (other) $("categoryInput").value = other.id;
   $("merchantSuggestions").classList.remove("show");
-  setTimeout(() => $("amountInput").focus(), 120);
+}
+
+function openAddEditor() {
+  clearAddEditor();
+  route("add");
 }
 
 function route(name) {
@@ -321,7 +329,6 @@ function route(name) {
   $(`screen-${name}`).classList.add("is-active");
   document.querySelectorAll(".nav-button").forEach(btn => btn.classList.toggle("is-active", btn.dataset.route === name));
   window.scrollTo({ top: 0, behavior: "smooth" });
-  if (name === "add") prepareAddForm();
 }
 
 function byNewest(a, b) {
@@ -337,6 +344,55 @@ function showToast(message) {
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[ch]));
+}
+
+
+function amountInputValue() {
+  const raw = String($("amountInput").value || "").replace(/,/g, ".").replace(/[^\d.]/g, "");
+  const parts = raw.split(".");
+  const normalised = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join("")}` : raw;
+  const value = Number(normalised);
+  return Number.isFinite(value) ? value : 0;
+}
+
+let saveInProgress = false;
+
+function saveManualTransaction() {
+  if (saveInProgress) return;
+  saveInProgress = true;
+
+  try {
+    const category = categoryById($("categoryInput").value) || categoryByName("Other") || state.categories[0];
+    const expense = {
+      id: crypto.randomUUID(),
+      amount: amountInputValue(),
+      merchant: $("merchantInput").value.trim(),
+      categoryId: category.id,
+      categoryName: category.name,
+      date: $("dateInput").value || todayISO(),
+      note: $("noteInput").value.trim(),
+      createdAt: Date.now()
+    };
+
+    if (!expense.amount || expense.amount <= 0) {
+      showToast("Add amount");
+      return;
+    }
+
+    if (!expense.merchant) {
+      showToast("Add merchant");
+      return;
+    }
+
+    state.expenses.push(expense);
+    saveState();
+    renderAll();
+    clearAddEditor();
+    route("home");
+    showToast("Transaction saved");
+  } finally {
+    setTimeout(() => { saveInProgress = false; }, 250);
+  }
 }
 
 function isAmountLine(line) {
@@ -460,7 +516,15 @@ function toCsv() {
 }
 
 function wireEvents() {
-  document.querySelectorAll("[data-route]").forEach(btn => btn.addEventListener("click", () => route(btn.dataset.route)));
+  document.querySelectorAll("[data-route]").forEach(btn => btn.addEventListener("click", event => {
+    event.preventDefault();
+    const targetRoute = btn.dataset.route;
+    if (targetRoute === "add") {
+      openAddEditor();
+      return;
+    }
+    route(targetRoute);
+  }));
 
   $("merchantInput").addEventListener("input", () => {
     const suggestions = merchantSuggestions($("merchantInput").value);
@@ -491,31 +555,27 @@ function wireEvents() {
   });
 
   $("merchantInput").addEventListener("blur", () => setTimeout(() => $("merchantSuggestions").classList.remove("show"), 180));
-
-  $("expenseForm").addEventListener("submit", event => {
+  $("saveTransaction").addEventListener("click", event => {
     event.preventDefault();
-    const category = categoryById($("categoryInput").value);
-    const expense = {
-      id: crypto.randomUUID(),
-      amount: Number($("amountInput").value),
-      merchant: $("merchantInput").value.trim(),
-      categoryId: category.id,
-      categoryName: category.name,
-      date: $("dateInput").value,
-      note: $("noteInput").value.trim(),
-      createdAt: Date.now()
-    };
+    saveManualTransaction();
+  });
 
-    if (!expense.amount || expense.amount <= 0 || !expense.merchant) {
-      showToast("Add amount and merchant");
-      return;
-    }
+  $("saveTransaction").addEventListener("touchend", event => {
+    event.preventDefault();
+    saveManualTransaction();
+  });
 
-    state.expenses.push(expense);
-    saveState();
-    renderAll();
-    route("home");
-    showToast("Transaction saved");
+  ["amountInput", "merchantInput", "noteInput"].forEach((id, idx, ids) => {
+    $(id).addEventListener("keydown", event => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      if (id === "noteInput") {
+        $("noteInput").blur();
+        return;
+      }
+      const nextId = ids[idx + 1] || "noteInput";
+      $(nextId).focus();
+    });
   });
 
   $("detectTransactions").addEventListener("click", () => {

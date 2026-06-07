@@ -74,16 +74,16 @@
           <span></span>
         </header>
 
-        <form class="form-card" id="expenseForm">
+        <section class="form-card" id="expenseEditor">
           <label class="field-label" for="amountInput">Amount</label>
           <div class="amount-field">
             <span>$</span>
-            <input id="amountInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0.00" required />
+            <input id="amountInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0.00" />
           </div>
 
           <label class="field-label" for="merchantInput">Merchant / description</label>
           <div class="suggest-wrap">
-            <input id="merchantInput" type="text" placeholder="e.g. Woolworths, Hungry Jacks" autocomplete="off" enterkeyhint="next" required />
+            <input id="merchantInput" type="text" placeholder="e.g. Woolworths, Hungry Jacks" autocomplete="off" enterkeyhint="next" />
             <div class="suggestions" id="merchantSuggestions"></div>
           </div>
 
@@ -97,7 +97,7 @@
           <input id="noteInput" type="text" placeholder="Optional" autocomplete="off" enterkeyhint="done" />
 
           <button class="primary-button full-width" id="saveTransaction" type="button">Save transaction</button>
-        </form>
+        </section>
       </section>
 
       <section class="screen page-screen" id="screen-paste">

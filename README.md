@@ -1,14 +1,14 @@
-# Money Budget Web App v5.6
+# Money Budget Web App v5.7
 
 ## Hotfix
-- Fixed Add Transaction field reset/glitch on iPhone.
-- Amount field now uses a text/decimal input parser instead of iOS number input.
-- Save Transaction uses explicit click/touch handling and form-submit fallback.
-- Pressing Enter/Next moves through fields instead of refreshing/resetting.
-- Add/Paste screens hide bottom nav.
-- Categories remain available for Add, Paste review, Analytics and Settings.
-- Categories are still not shown on Home.
-- Storage key unchanged: moneyBudget.v1
+- Rebuilt Add Transaction so it is no longer an HTML form.
+- Save Transaction is now a direct manual save button.
+- The Add screen no longer resets when moving between fields.
+- Pressing Enter/Next is intercepted and moves focus instead of submitting/reloading.
+- Amount is parsed safely from a text decimal field.
+- Categories remain available in Add, Paste review, Analytics and Settings.
+- Categories remain hidden from Home.
+- Storage key unchanged: moneyBudget.v1.
 
 ## Replace on GitHub
 Replace:
