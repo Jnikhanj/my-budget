@@ -4,8 +4,8 @@
   "description": "Private local budget tracker",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f2f3f7",
-  "theme_color": "#f3f4f8",
+  "background_color": "#eef3ef",
+  "theme_color": "#0f8a5f",
   "orientation": "portrait",
   "icons": [
     {
