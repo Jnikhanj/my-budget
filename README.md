@@ -1,4 +1,4 @@
-# Money Budget Web App v5.8
+# Money Budget Web App v5.9
 
 ## Hotfix
 - Rebuilt Add Transaction so it is no longer an HTML form.
@@ -11,11 +11,19 @@
 - Categories remain hidden from Home.
 - Storage key unchanged: moneyBudget.v1.
 
+## Design refresh
+- Green money-focused visual theme with stronger budget progress.
+- Add Transaction uses a cleaner, larger amount entry layout.
+- Light, dark and auto appearance modes are available in Settings.
+- Bottom navigation and transaction lists have a more polished app feel.
+
 ## Replace on GitHub
 Replace:
 - index.html
 - style.css
 - app.js
+- amount-hotfix.js
+- theme.js
 - manifest.json
 - service-worker.js
 - README.md
