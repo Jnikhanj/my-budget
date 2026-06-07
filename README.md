@@ -1,4 +1,4 @@
-# Money Budget Web App v5.9
+# Money Budget Web App v6.0
 
 ## Hotfix
 - Rebuilt Add Transaction so it is no longer an HTML form.
@@ -7,22 +7,22 @@
 - Pressing Enter/Next is intercepted and moves focus instead of submitting/reloading.
 - Amount is parsed safely from a text decimal field.
 - Amount stays in editor state while moving from Amount to Merchant.
-- Categories remain available in Add, Paste review, Analytics and Settings.
+- Categories remain available in Add, Import review, Analytics and Settings.
 - Categories remain hidden from Home.
 - Storage key unchanged: moneyBudget.v1.
 
 ## Design refresh
-- Green money-focused visual theme with stronger budget progress.
-- Add Transaction uses a cleaner, larger amount entry layout.
-- Light, dark and auto appearance modes are available in Settings.
-- Bottom navigation and transaction lists have a more polished app feel.
+- Minimal Apple-like interface with system fonts and quieter copy.
+- Mono is the default theme, with optional Blue, Slate, Plum, Teal and Coral accents.
+- Add Transaction has selectable merchant suggestions and reliable Cancel.
+- Category budgets and recurring bills are available in Settings.
+- Analytics now includes top category, weekly average, recurring total and category progress.
 
 ## Replace on GitHub
 Replace:
 - index.html
 - style.css
 - app.js
-- amount-hotfix.js
 - theme.js
 - manifest.json
 - service-worker.js
