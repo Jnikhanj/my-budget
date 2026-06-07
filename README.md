@@ -26,3 +26,11 @@ Replace:
 - README.md
 - icon-192.png
 - icon-512.png
+
+
+## v5.4 hotfix
+- Fixed Add Transaction glitch by removing implicit form submission.
+- Save is now handled only by the Save transaction button.
+- Pressing Enter/Next moves focus instead of clearing the screen.
+- Bottom navigation is hidden on Add/Paste screens to prevent accidental re-opening/resetting.
+- Cache bumped to v5.4.

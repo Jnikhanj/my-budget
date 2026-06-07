@@ -492,8 +492,17 @@ function wireEvents() {
 
   $("merchantInput").addEventListener("blur", () => setTimeout(() => $("merchantSuggestions").classList.remove("show"), 180));
 
-  $("expenseForm").addEventListener("submit", event => {
-    event.preventDefault();
+  $("expenseForm").addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const fields = ["amountInput", "merchantInput", "categoryInput", "dateInput", "noteInput"].map(id => $(id));
+      const index = fields.indexOf(document.activeElement);
+      if (index >= 0 && index < fields.length - 1) fields[index + 1].focus();
+      else $("saveTransaction").focus();
+    }
+  });
+
+  $("saveTransaction").addEventListener("click", () => {
     const category = categoryById($("categoryInput").value);
     const expense = {
       id: crypto.randomUUID(),
