@@ -35,6 +35,7 @@ const parseDate = (value) => {
 
 let state = loadState();
 let detectedTransactions = [];
+let editorState = { amount: "", merchant: "", category: "", note: "", date: "" };
 
 function loadState() {
   const saved = localStorage.getItem(STORAGE_KEY);
@@ -305,22 +306,30 @@ function renderSettings() {
 function fillCategorySelects() {
   const options = state.categories.map(c => `<option value="${c.id}">${c.icon} ${escapeHtml(c.name)}</option>`).join("");
   $("categoryInput").innerHTML = options;
+  if (editorState.category) $("categoryInput").value = editorState.category;
 }
 
 function clearAddEditor() {
+  editorState = { amount: "", merchant: "", category: "", note: "", date: todayISO() };
   $("amountInput").value = "";
   $("merchantInput").value = "";
   $("noteInput").value = "";
   $("dateInput").value = todayISO();
   fillCategorySelects();
   const other = categoryByName("Other") || state.categories[0];
-  if (other) $("categoryInput").value = other.id;
+  if (other) {
+    $("categoryInput").value = other.id;
+    editorState.category = other.id;
+  }
   $("merchantSuggestions").classList.remove("show");
 }
 
 function openAddEditor() {
   clearAddEditor();
   route("add");
+  setTimeout(() => {
+    $("amountInput").focus();
+  }, 100);
 }
 
 function route(name) {
@@ -345,7 +354,6 @@ function showToast(message) {
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[ch]));
 }
-
 
 function amountInputValue() {
   const raw = String($("amountInput").value || "").replace(/,/g, ".").replace(/[^\d.]/g, "");
@@ -376,11 +384,13 @@ function saveManualTransaction() {
 
     if (!expense.amount || expense.amount <= 0) {
       showToast("Add amount");
+      saveInProgress = false;
       return;
     }
 
     if (!expense.merchant) {
       showToast("Add merchant");
+      saveInProgress = false;
       return;
     }
 
@@ -526,10 +536,19 @@ function wireEvents() {
     route(targetRoute);
   }));
 
+  // Track editor input changes to preserve state
+  $("amountInput").addEventListener("input", () => {
+    editorState.amount = $("amountInput").value;
+  });
+
   $("merchantInput").addEventListener("input", () => {
+    editorState.merchant = $("merchantInput").value;
     const suggestions = merchantSuggestions($("merchantInput").value);
     const cat = suggestCategoryForMerchant($("merchantInput").value);
-    if (cat) $("categoryInput").value = cat;
+    if (cat) {
+      $("categoryInput").value = cat;
+      editorState.category = cat;
+    }
 
     if (!suggestions.length) {
       $("merchantSuggestions").classList.remove("show");
@@ -550,11 +569,26 @@ function wireEvents() {
     const item = event.target.closest(".suggestion-item");
     if (!item) return;
     $("merchantInput").value = item.dataset.merchant;
+    editorState.merchant = item.dataset.merchant;
     $("categoryInput").value = item.dataset.category;
+    editorState.category = item.dataset.category;
     $("merchantSuggestions").classList.remove("show");
   });
 
   $("merchantInput").addEventListener("blur", () => setTimeout(() => $("merchantSuggestions").classList.remove("show"), 180));
+
+  $("categoryInput").addEventListener("change", () => {
+    editorState.category = $("categoryInput").value;
+  });
+
+  $("noteInput").addEventListener("input", () => {
+    editorState.note = $("noteInput").value;
+  });
+
+  $("dateInput").addEventListener("change", () => {
+    editorState.date = $("dateInput").value;
+  });
+
   $("saveTransaction").addEventListener("click", event => {
     event.preventDefault();
     saveManualTransaction();
