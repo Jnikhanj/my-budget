@@ -1,1 +1,223 @@
-const STORAGE_KEY="moneyBudget.v1";const categoryDefaults=[{id:crypto.randomUUID(),name:"Food",icon:"🍴",color:"#f3e5d7"},{id:crypto.randomUUID(),name:"Groceries",icon:"🛒",color:"#e0f0df"},{id:crypto.randomUUID(),name:"Fuel",icon:"⛽",color:"#fff0bd"},{id:crypto.randomUUID(),name:"Bills",icon:"📄",color:"#e4e9fb"},{id:crypto.randomUUID(),name:"Shopping",icon:"🛍️",color:"#eee2f8"},{id:crypto.randomUUID(),name:"Health",icon:"💊",color:"#dff2f5"},{id:crypto.randomUUID(),name:"Family / India",icon:"🏠",color:"#ffe6d5"},{id:crypto.randomUUID(),name:"Other",icon:"•",color:"#eceef2"}];const keywordRules=[{words:["dominos","dominoes","hungry","jacks","h js","kfc","mcdonald","maccas","subway","pizza","coffee","cafe","restaurant","takeaway"],category:"Food"},{words:["woolworths","coles","aldi","iga","costco","grocery"],category:"Groceries"},{words:["bp","shell","ampol","caltex","united","fuel","petrol","servo"],category:"Fuel"},{words:["chemist","pharmacy","priceline","terry white","health"],category:"Health"},{words:["kmart","big w","target","amazon","ebay","shopping"],category:"Shopping"},{words:["netflix","spotify","apple","icloud","telstra","optus","agl","aurora","bill"],category:"Bills"}];const $=id=>document.getElementById(id);const money=value=>new Intl.NumberFormat("en-AU",{style:"currency",currency:"AUD",maximumFractionDigits:Number(value||0)%1===0?0:2}).format(Number(value||0)).replace("A","");const todayISO=()=>new Date().toISOString().slice(0,10);const parseDate=value=>{const[y,m,d]=String(value).split("-").map(Number);return new Date(y,m-1,d)};let state=loadState();let homeCategoryFilter="";let detectedTransactions=[];function normalizeLoadedState(parsed){return{monthlyBudget:Number(parsed.monthlyBudget??2800),budgetStartDay:Number(parsed.budgetStartDay??1),categories:parsed.categories?.length?parsed.categories:categoryDefaults,expenses:parsed.expenses??[]}}function loadState(){const saved=localStorage.getItem(STORAGE_KEY);if(saved){try{return normalizeLoadedState(JSON.parse(saved))}catch{}}return{monthlyBudget:2800,budgetStartDay:1,categories:categoryDefaults,expenses:[]}}function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}function getCurrentBudgetPeriod(){const now=new Date();const startDay=Math.min(Math.max(Number(state.budgetStartDay||1),1),28);let start=new Date(now.getFullYear(),now.getMonth(),startDay);if(now<start)start=new Date(now.getFullYear(),now.getMonth()-1,startDay);const end=new Date(start.getFullYear(),start.getMonth()+1,startDay);return{start,end}}function daysLeft(){const{end}=getCurrentBudgetPeriod();const today=new Date();today.setHours(0,0,0,0);const lastDay=new Date(end.getTime()-86400000);lastDay.setHours(0,0,0,0);return Math.max(0,Math.round((lastDay-today)/86400000))}function inCurrentPeriod(expense){const{start,end}=getCurrentBudgetPeriod();const d=parseDate(expense.date);return d>=start&&d<end}function currentExpenses(){return state.expenses.filter(inCurrentPeriod)}function total(expenses=currentExpenses()){return expenses.reduce((sum,expense)=>sum+Number(expense.amount||0),0)}function categoryById(id){return state.categories.find(c=>c.id===id)||state.categories.find(c=>c.name==="Other")||state.categories[0]}function categoryByName(name){return state.categories.find(c=>c.name.toLowerCase()===String(name).toLowerCase())}function suggestCategoryForMerchant(merchant){const text=String(merchant||"").toLowerCase();const previous=[...state.expenses].reverse().find(expense=>String(expense.merchant||"").toLowerCase()===text);if(previous)return previous.categoryId;for(const rule of keywordRules){if(rule.words.some(word=>text.includes(word))){const category=categoryByName(rule.category);if(category)return category.id}}return(categoryByName("Other")||state.categories[0]).id}function titleCase(value){return String(value).replace(/\w\S*/g,text=>text.charAt(0).toUpperCase()+text.slice(1).toLowerCase())}function merchantSuggestions(query){const q=String(query||"").trim().toLowerCase();if(!q)return[];const seen=new Map();for(const expense of[...state.expenses].reverse()){const merchant=String(expense.merchant||"").trim();if(!merchant)continue;if(merchant.toLowerCase().includes(q)&&!seen.has(merchant.toLowerCase()))seen.set(merchant.toLowerCase(),{merchant,categoryId:expense.categoryId})}keywordRules.flatMap(rule=>rule.words).forEach(word=>{if(word.includes(q)&&!seen.has(word)){const cat=suggestCategoryForMerchant(word);seen.set(word,{merchant:titleCase(word),categoryId:cat})}});return Array.from(seen.values()).slice(0,5)}function categoryTotals(expenses=currentExpenses()){const map=new Map();for(const category of state.categories)map.set(category.id,{...category,amount:0,count:0});for(const expense of expenses){const category=categoryById(expense.categoryId);const item=map.get(category.id);item.amount+=Number(expense.amount||0);item.count+=1}return Array.from(map.values()).filter(item=>item.amount>0).sort((a,b)=>b.amount-a.amount)}function budgetStatus(){const spent=total();const budget=Number(state.monthlyBudget||0);const left=Math.max(0,budget-spent);const usedPercent=budget>0?Math.min(100,spent/budget*100):0;return{spent,budget,left,usedPercent}}function renderAll(){renderHome();renderHistory();renderAnalytics();renderSettings();fillCategorySelects()}function renderHome(){const status=budgetStatus();$("leftAmount").textContent=money(status.left);$("budgetProgress").style.width=`${status.usedPercent}%`;$("summaryLine").textContent=`${money(status.spent)} of ${money(status.budget)} spent · ${daysLeft()} days left`;renderHomeChips();const expenses=currentExpenses().filter(e=>!homeCategoryFilter||e.categoryId===homeCategoryFilter).sort(byNewest);$("homeListTotal").textContent=`${money(total(expenses))} · ${expenses.length}`;renderTransactions($("homeTransactions"),expenses.slice(0,8))}function renderHomeChips(){const usedCats=categoryTotals().map(c=>c.id);const categories=state.categories.filter(c=>usedCats.includes(c.id)||["Food","Groceries","Fuel","Bills","Shopping","Health"].includes(c.name)).slice(0,8);$("homeChips").innerHTML=[`<button class="filter-chip ${!homeCategoryFilter?"is-active":""}" data-home-chip="">All</button>`,...categories.map(cat=>`<button class="filter-chip ${homeCategoryFilter===cat.id?"is-active":""}" data-home-chip="${cat.id}">${cat.icon} ${escapeHtml(cat.name)}</button>`)].join("")}function renderTransactions(container,rows){if(!rows.length){container.innerHTML=`<div class="empty-card">No transactions yet.</div>`;return}container.innerHTML=rows.map(expense=>{const category=categoryById(expense.categoryId);return`<div class="transaction-row"><div class="category-icon" style="background:${category.color||"#eceef2"}">${category.icon||"•"}</div><div><div class="row-title">${escapeHtml(expense.merchant)}</div><div class="row-subtitle">${parseDate(expense.date).toLocaleDateString("en-AU",{day:"numeric",month:"short",year:"numeric"})}</div></div><div class="row-amount">${money(expense.amount)}</div></div>`}).join("")}function renderHistory(){const query=$("searchInput").value.trim().toLowerCase();const cat=$("historyCategoryFilter").value;const rows=state.expenses.filter(e=>!cat||e.categoryId===cat).filter(e=>{if(!query)return true;const category=categoryById(e.categoryId)?.name||"";return[e.merchant,e.note,category].join(" ").toLowerCase().includes(query)}).sort(byNewest);renderTransactions($("historyList"),rows)}function renderAnalytics(){const status=budgetStatus();$("analyticsSpent").textContent=money(status.spent);$("budgetMiniText").textContent=`${money(status.left)} left`;$("budgetMiniPercent").textContent=`${Math.round(status.usedPercent)}%`;renderWeeklyChart();const cats=categoryTotals();const sortBy=$("analyticsSort").value;if(sortBy==="category")cats.sort((a,b)=>a.name.localeCompare(b.name));if(sortBy==="count")cats.sort((a,b)=>b.count-a.count);$("analyticsCategories").innerHTML=cats.length?cats.map(row=>`<div class="transaction-row"><div class="category-icon" style="background:${row.color||"#eceef2"}">${row.icon||"•"}</div><div><div class="row-title">${escapeHtml(row.name)}</div><div class="row-subtitle">${row.count} expense${row.count===1?"":"s"}</div></div><div class="row-amount">${money(row.amount)}</div></div>`).join(""):`<div class="empty-card">No category spending yet.</div>`}function renderWeeklyChart(){const expenses=currentExpenses();const{start}=getCurrentBudgetPeriod();const buckets=[0,0,0,0,0];for(const expense of expenses){const idx=Math.min(4,Math.floor((parseDate(expense.date)-start)/(7*86400000)));if(idx>=0)buckets[idx]+=Number(expense.amount||0)}const max=Math.max(1,...buckets);const labels=["1–7","8–14","15–21","22–28","29+"];$("weeklyChart").innerHTML=buckets.map((v,idx)=>{const h=Math.max(v?8:4,v/max*118);return`<div class="bar-wrap"><div class="bar" style="height:${h}px"></div><div>${labels[idx]}</div></div>`}).join("")}function renderSettings(){$("monthlyBudget").value=state.monthlyBudget;$("budgetStartDay").value=state.budgetStartDay;$("categoryEditList").innerHTML=state.categories.map(category=>`<div class="category-edit-row"><div>${category.icon} ${escapeHtml(category.name)}</div><button class="text-button" type="button" data-delete-category="${category.id}">Remove</button></div>`).join("");const filter=$("historyCategoryFilter");const currentValue=filter.value;filter.innerHTML=`<option value="">All</option>`+state.categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");filter.value=currentValue}function fillCategorySelects(){$("categoryInput").innerHTML=state.categories.map(c=>`<option value="${c.id}">${c.icon} ${escapeHtml(c.name)}</option>`).join("")}function prepareAddForm(){$("expenseForm").reset();$("dateInput").value=todayISO();fillCategorySelects();$("merchantSuggestions").classList.remove("show");setTimeout(()=>$("amountInput").focus(),120)}function route(name){const previous=document.body.dataset.route;document.body.dataset.route=name;document.querySelectorAll(".screen").forEach(screen=>screen.classList.remove("is-active"));$(`screen-${name}`).classList.add("is-active");document.querySelectorAll(".nav-button").forEach(btn=>btn.classList.toggle("is-active",btn.dataset.route===name));window.scrollTo({top:0,behavior:"smooth"});if(name==="add"&&previous!=="add")prepareAddForm()}function byNewest(a,b){return new Date(`${b.date}T12:00`)-new Date(`${a.date}T12:00`)||(b.createdAt||0)-(a.createdAt||0)}function showToast(message){const toast=$("toast");toast.textContent=message;toast.classList.add("show");setTimeout(()=>toast.classList.remove("show"),1900)}function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]))}function isAmountLine(line){return /^[-+]?\s*(?:A?\$)?\s*\d[\d,]*(?:\.\d{1,2})?\s*$/.test(line.trim())}function amountFromLine(line){const cleaned=line.replace(/[^\d.-]/g,"");const value=Math.abs(Number(cleaned));return Number.isFinite(value)?value:0}function shouldIgnoreLine(line){const text=line.trim().toLowerCase();return !text||text==="$"||text==="aud"||text==="pending"||text==="completed"||text.includes("available balance")}function parsePastedTransactions(text){const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(l=>!shouldIgnoreLine(l));const results=[];let pendingMerchant="";for(const line of lines){if(isAmountLine(line)){const amount=amountFromLine(line);if(pendingMerchant&&amount>0){results.push({id:crypto.randomUUID(),merchant:pendingMerchant,amount,categoryId:suggestCategoryForMerchant(pendingMerchant),date:todayISO(),note:""});pendingMerchant=""}}else pendingMerchant=line}return results}function renderReview(){$("reviewSection").hidden=!detectedTransactions.length;$("reviewCount").textContent=`${detectedTransactions.length} detected`;$("reviewList").innerHTML=detectedTransactions.map((item,idx)=>`<div class="review-item" data-review-index="${idx}"><div class="review-grid"><input data-review-field="merchant" value="${escapeHtml(item.merchant)}" /><input data-review-field="amount" type="number" step="0.01" min="0" value="${item.amount}" /></div><div class="review-grid"><select data-review-field="categoryId">${state.categories.map(c=>`<option value="${c.id}" ${c.id===item.categoryId?"selected":""}>${c.icon} ${escapeHtml(c.name)}</option>`).join("")}</select><input data-review-field="date" type="date" value="${item.date}" /></div></div>`).join("")}function download(filename,content,type){const blob=new Blob([content],{type});const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),500)}function toCsv(){const header=["date","amount","merchant","category","note"];const lines=state.expenses.sort(byNewest).map(e=>{const category=categoryById(e.categoryId)?.name||"Other";return[e.date,e.amount,e.merchant,category,e.note].map(v=>`"${String(v??"").replaceAll('"','""')}"`).join(",")});return[header.join(","),...lines].join("\n")}function wireEvents(){document.querySelectorAll("[data-route]").forEach(btn=>btn.addEventListener("click",()=>route(btn.dataset.route)));$("homeChips").addEventListener("click",event=>{const chip=event.target.closest("[data-home-chip]");if(!chip)return;homeCategoryFilter=chip.dataset.homeChip;renderHome()});$("merchantInput").addEventListener("input",()=>{const suggestions=merchantSuggestions($("merchantInput").value);if(!suggestions.length){$("merchantSuggestions").classList.remove("show");const cat=suggestCategoryForMerchant($("merchantInput").value);if(cat)$("categoryInput").value=cat;return}$("merchantSuggestions").innerHTML=suggestions.map(item=>{const category=categoryById(item.categoryId);return`<button type="button" class="suggestion-item" data-merchant="${escapeHtml(item.merchant)}" data-category="${item.categoryId}"><span>${escapeHtml(item.merchant)}</span><span class="suggestion-meta">${escapeHtml(category?.name||"")}</span></button>`}).join("");$("merchantSuggestions").classList.add("show")});$("merchantSuggestions").addEventListener("click",event=>{const item=event.target.closest(".suggestion-item");if(!item)return;$("merchantInput").value=item.dataset.merchant;$("categoryInput").value=item.dataset.category;$("merchantSuggestions").classList.remove("show")});$("merchantInput").addEventListener("blur",()=>{setTimeout(()=>$("merchantSuggestions").classList.remove("show"),180);const cat=suggestCategoryForMerchant($("merchantInput").value);if(cat)$("categoryInput").value=cat});function saveExpense(){const category=categoryById($("categoryInput").value);const expense={id:crypto.randomUUID(),amount:Number($("amountInput").value),merchant:$("merchantInput").value.trim(),categoryId:category.id,categoryName:category.name,date:$("dateInput").value,note:$("noteInput").value.trim(),createdAt:Date.now()};if(!expense.amount||expense.amount<=0||!expense.merchant){showToast("Add amount and merchant");return}state.expenses.push(expense);saveState();renderAll();route("home");showToast("Transaction saved")}$("expenseForm").addEventListener("submit",event=>{event.preventDefault();saveExpense()});$("saveExpense").addEventListener("click",saveExpense);$("expenseForm").addEventListener("keydown",event=>{if(event.key!=="Enter")return;const controls=Array.from($("expenseForm").querySelectorAll("input,select,textarea")).filter(el=>!el.disabled&&el.type!=="hidden");const current=controls.indexOf(event.target);if(current===-1)return;event.preventDefault();if(current<controls.length-1)controls[current+1].focus();else saveExpense()});$("detectTransactions").addEventListener("click",()=>{detectedTransactions=parsePastedTransactions($("pasteInput").value);renderReview();showToast(detectedTransactions.length?`${detectedTransactions.length} detected`:"No transactions detected")});$("reviewList").addEventListener("input",event=>{const item=event.target.closest(".review-item");if(!item)return;const idx=Number(item.dataset.reviewIndex);const field=event.target.dataset.reviewField;if(!field||!detectedTransactions[idx])return;detectedTransactions[idx][field]=field==="amount"?Number(event.target.value):event.target.value});$("saveDetected").addEventListener("click",()=>{const valid=detectedTransactions.filter(t=>t.merchant&&Number(t.amount)>0);if(!valid.length){showToast("Nothing to save");return}state.expenses.push(...valid.map(t=>({id:crypto.randomUUID(),amount:Number(t.amount),merchant:String(t.merchant).trim(),categoryId:t.categoryId,categoryName:categoryById(t.categoryId)?.name||"Other",date:t.date||todayISO(),note:"",createdAt:Date.now()})));detectedTransactions=[];$("pasteInput").value="";saveState();renderAll();route("home");showToast(`${valid.length} transactions saved`)});$("analyticsSort").addEventListener("change",renderAnalytics);$("searchInput").addEventListener("input",renderHistory);$("historyCategoryFilter").addEventListener("change",renderHistory);$("saveSettings").addEventListener("click",()=>{state.monthlyBudget=Number($("monthlyBudget").value||0);state.budgetStartDay=Math.min(Math.max(Number($("budgetStartDay").value||1),1),28);saveState();renderAll();showToast("Settings saved")});$("addCategory").addEventListener("click",()=>{const name=$("newCategoryName").value.trim();if(!name)return;const palette=["#f3e5d7","#e0f0df","#fff0bd","#e4e9fb","#eee2f8","#dff2f5","#ffe6d5","#eceef2"];state.categories.push({id:crypto.randomUUID(),name,icon:"•",color:palette[state.categories.length%palette.length]});$("newCategoryName").value="";saveState();renderAll();showToast("Category added")});$("categoryEditList").addEventListener("click",event=>{const id=event.target.dataset.deleteCategory;if(!id)return;const used=state.expenses.some(e=>e.categoryId===id);if(used){showToast("Category has expenses");return}state.categories=state.categories.filter(c=>c.id!==id);saveState();renderAll()});$("exportJson").addEventListener("click",()=>download(`money-budget-backup-${todayISO()}.json`,JSON.stringify(state,null,2),"application/json"));$("exportCsv").addEventListener("click",()=>download(`money-budget-transactions-${todayISO()}.csv`,toCsv(),"text/csv"));$("importJson").addEventListener("change",async event=>{const file=event.target.files?.[0];if(!file)return;try{state=normalizeLoadedState(JSON.parse(await file.text()));saveState();renderAll();route("home");showToast("Backup imported")}catch{showToast("Could not import file")}finally{event.target.value=""}});$("resetData").addEventListener("click",()=>{if(!confirm("Delete all budget data stored in this browser?"))return;localStorage.removeItem(STORAGE_KEY);state=loadState();renderAll();route("home");showToast("Data reset")})}if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js").catch(()=>{}));wireEvents();fillCategorySelects();$("dateInput").value=todayISO();renderAll();
+const STORAGE_KEY = "moneyBudget.v1";
+const $ = (id) => document.getElementById(id);
+
+const money = (value) => new Intl.NumberFormat("en-AU", {
+  style: "currency", currency: "AUD", maximumFractionDigits: Number(value || 0) % 1 === 0 ? 0 : 2
+}).format(Number(value || 0)).replace("A", "");
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
+const parseDate = (value) => { const [y, m, d] = String(value).split("-").map(Number); return new Date(y, m - 1, d); };
+let state = loadState();
+let detectedTransactions = [];
+
+function normalizeLoadedState(parsed) {
+  return {
+    monthlyBudget: Number(parsed.monthlyBudget ?? 2800),
+    expenses: (parsed.expenses ?? []).map(expense => ({
+      id: expense.id || crypto.randomUUID(),
+      amount: Number(expense.amount || 0),
+      merchant: expense.merchant || expense.description || "Transaction",
+      date: expense.date || todayISO(),
+      note: expense.note || "",
+      createdAt: expense.createdAt || Date.now()
+    }))
+  };
+}
+function loadState() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) { try { return normalizeLoadedState(JSON.parse(saved)); } catch {} }
+  return { monthlyBudget: 2800, expenses: [] };
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+function getCurrentBudgetPeriod() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  return { start, end };
+}
+function daysLeft() {
+  const today = new Date();
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  return Math.max(0, lastDay - today.getDate());
+}
+function inCurrentPeriod(expense) {
+  const { start, end } = getCurrentBudgetPeriod();
+  const d = parseDate(expense.date);
+  return d >= start && d < end;
+}
+function currentExpenses() { return state.expenses.filter(inCurrentPeriod); }
+function total(expenses = currentExpenses()) { return expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0); }
+function budgetStatus() {
+  const spent = total();
+  const budget = Number(state.monthlyBudget || 0);
+  const left = Math.max(0, budget - spent);
+  const usedPercent = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
+  return { spent, budget, left, usedPercent };
+}
+function merchantInitials(name) {
+  const cleaned = String(name || "?").replace(/[^a-z0-9\s]/gi, " ").trim();
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  return parts.slice(0, 2).map(p => p[0]).join("").toUpperCase();
+}
+function merchantGroups(expenses = currentExpenses()) {
+  const map = new Map();
+  for (const expense of expenses) {
+    const key = String(expense.merchant || "Transaction").trim().toLowerCase();
+    if (!map.has(key)) map.set(key, { merchant: expense.merchant, amount: 0, count: 0 });
+    const item = map.get(key);
+    item.amount += Number(expense.amount || 0);
+    item.count += 1;
+  }
+  return Array.from(map.values()).sort((a,b) => b.amount - a.amount);
+}
+function merchantSuggestions(query) {
+  const q = String(query || "").trim().toLowerCase();
+  if (!q) return [];
+  const seen = new Map();
+  for (const expense of [...state.expenses].reverse()) {
+    const merchant = String(expense.merchant || "").trim();
+    if (merchant && merchant.toLowerCase().includes(q) && !seen.has(merchant.toLowerCase())) {
+      seen.set(merchant.toLowerCase(), merchant);
+    }
+  }
+  return Array.from(seen.values()).slice(0, 5);
+}
+function renderAll() { renderHome(); renderHistory(); renderAnalytics(); renderSettings(); }
+function renderHome() {
+  const status = budgetStatus();
+  $("leftAmount").textContent = money(status.left);
+  $("budgetProgress").style.width = `${status.usedPercent}%`;
+  $("summaryLine").textContent = `${money(status.spent)} of ${money(status.budget)} spent · ${daysLeft()} days left`;
+  const expenses = currentExpenses().sort(byNewest);
+  $("homeListTotal").textContent = `${money(total(expenses))} · ${expenses.length}`;
+  renderTransactions($("homeTransactions"), expenses.slice(0, 10));
+}
+function renderTransactions(container, rows) {
+  if (!rows.length) { container.innerHTML = `<div class="empty-card">No transactions yet.</div>`; return; }
+  container.innerHTML = rows.map(expense => `
+    <div class="transaction-row">
+      <div class="merchant-icon">${escapeHtml(merchantInitials(expense.merchant))}</div>
+      <div><div class="row-title">${escapeHtml(expense.merchant)}</div><div class="row-subtitle">${parseDate(expense.date).toLocaleDateString("en-AU", {day:"numeric", month:"short", year:"numeric"})}</div></div>
+      <div class="row-amount">${money(expense.amount)}</div>
+    </div>`).join("");
+}
+function renderHistory() {
+  const query = $("searchInput").value.trim().toLowerCase();
+  const rows = state.expenses.filter(e => !query || [e.merchant, e.note].join(" ").toLowerCase().includes(query)).sort(byNewest);
+  renderTransactions($("historyList"), rows);
+}
+function renderAnalytics() {
+  const status = budgetStatus();
+  $("analyticsSpent").textContent = money(status.spent);
+  $("budgetMiniText").textContent = `${money(status.left)} left`;
+  $("budgetMiniPercent").textContent = `${Math.round(status.usedPercent)}%`;
+  renderWeeklyChart();
+  const groups = merchantGroups();
+  $("merchantSummary").textContent = `${groups.length}`;
+  $("analyticsMerchants").innerHTML = groups.length ? groups.slice(0, 8).map(row => `
+    <div class="transaction-row">
+      <div class="merchant-icon">${escapeHtml(merchantInitials(row.merchant))}</div>
+      <div><div class="row-title">${escapeHtml(row.merchant)}</div><div class="row-subtitle">${row.count} transaction${row.count === 1 ? "" : "s"}</div></div>
+      <div class="row-amount">${money(row.amount)}</div>
+    </div>`).join("") : `<div class="empty-card">No merchant spending yet.</div>`;
+}
+function renderWeeklyChart() {
+  const expenses = currentExpenses();
+  const { start } = getCurrentBudgetPeriod();
+  const buckets = [0,0,0,0,0];
+  for (const expense of expenses) {
+    const idx = Math.min(4, Math.floor((parseDate(expense.date) - start) / (7 * 86400000)));
+    if (idx >= 0) buckets[idx] += Number(expense.amount || 0);
+  }
+  const max = Math.max(1, ...buckets);
+  const labels = ["1–7", "8–14", "15–21", "22–28", "29+"];
+  $("weeklyChart").innerHTML = buckets.map((v, idx) => `<div class="bar-wrap"><div class="bar" style="height:${Math.max(v ? 8 : 4, (v/max)*110)}px"></div><div>${labels[idx]}</div></div>`).join("");
+}
+function renderSettings() { $("monthlyBudget").value = state.monthlyBudget; }
+function prepareAddForm() {
+  $("expenseForm").reset();
+  $("dateInput").value = todayISO();
+  $("merchantSuggestions").classList.remove("show");
+  setTimeout(() => $("amountInput").focus(), 120);
+}
+function route(name) {
+  const previous = document.body.dataset.route;
+  document.body.dataset.route = name;
+  document.querySelectorAll(".screen").forEach(screen => screen.classList.remove("is-active"));
+  $(`screen-${name}`).classList.add("is-active");
+  document.querySelectorAll(".nav-button").forEach(btn => btn.classList.toggle("is-active", btn.dataset.route === name));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (name === "add" && previous !== "add") prepareAddForm();
+}
+function byNewest(a,b) { return new Date(`${b.date}T12:00`) - new Date(`${a.date}T12:00`) || (b.createdAt || 0) - (a.createdAt || 0); }
+function showToast(message) { const toast = $("toast"); toast.textContent = message; toast.classList.add("show"); setTimeout(() => toast.classList.remove("show"), 1900); }
+function escapeHtml(value) { return String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch])); }
+function isAmountLine(line) { return /^[-+]?\s*(?:A?\$)?\s*\d[\d,]*(?:\.\d{1,2})?\s*$/.test(line.trim()); }
+function amountFromLine(line) { const value = Math.abs(Number(line.replace(/[^\d.-]/g, ""))); return Number.isFinite(value) ? value : 0; }
+function shouldIgnoreLine(line) { const text = line.trim().toLowerCase(); return !text || text === "$" || text === "aud" || text === "pending" || text === "completed" || text.includes("available balance"); }
+function parsePastedTransactions(text) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => !shouldIgnoreLine(l));
+  const results = []; let pendingMerchant = "";
+  for (const line of lines) {
+    if (isAmountLine(line)) { const amount = amountFromLine(line); if (pendingMerchant && amount > 0) { results.push({ id: crypto.randomUUID(), merchant: pendingMerchant, amount, date: todayISO(), note: "" }); pendingMerchant = ""; } }
+    else pendingMerchant = line;
+  }
+  return results;
+}
+function renderReview() {
+  $("reviewSection").hidden = !detectedTransactions.length;
+  $("reviewCount").textContent = `${detectedTransactions.length} detected`;
+  $("reviewList").innerHTML = detectedTransactions.map((item, idx) => `
+    <div class="review-item" data-review-index="${idx}">
+      <div class="review-grid"><input data-review-field="merchant" value="${escapeHtml(item.merchant)}" /><input data-review-field="amount" type="number" step="0.01" min="0" value="${item.amount}" /></div>
+      <input data-review-field="date" type="date" value="${item.date}" />
+    </div>`).join("");
+}
+function download(filename, content, type) { const blob = new Blob([content], { type }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = filename; link.click(); setTimeout(() => URL.revokeObjectURL(url), 500); }
+function toCsv() {
+  const header = ["date","amount","merchant","note"];
+  const lines = state.expenses.sort(byNewest).map(e => [e.date, e.amount, e.merchant, e.note].map(v => `"${String(v ?? "").replaceAll('"','""')}"`).join(","));
+  return [header.join(","), ...lines].join("\n");
+}
+function saveExpense() {
+  const expense = { id: crypto.randomUUID(), amount: Number($("amountInput").value), merchant: $("merchantInput").value.trim(), date: $("dateInput").value, note: $("noteInput").value.trim(), createdAt: Date.now() };
+  if (!expense.amount || expense.amount <= 0 || !expense.merchant) { showToast("Add amount and merchant"); return; }
+  state.expenses.push(expense); saveState(); renderAll(); route("home"); showToast("Transaction saved");
+}
+function wireEvents() {
+  document.querySelectorAll("[data-route]").forEach(btn => btn.addEventListener("click", () => route(btn.dataset.route)));
+  $("merchantInput").addEventListener("input", () => {
+    const suggestions = merchantSuggestions($("merchantInput").value);
+    if (!suggestions.length) { $("merchantSuggestions").classList.remove("show"); return; }
+    $("merchantSuggestions").innerHTML = suggestions.map(merchant => `<button type="button" class="suggestion-item" data-merchant="${escapeHtml(merchant)}"><span>${escapeHtml(merchant)}</span><span class="suggestion-meta">Previous</span></button>`).join("");
+    $("merchantSuggestions").classList.add("show");
+  });
+  $("merchantSuggestions").addEventListener("click", event => { const item = event.target.closest(".suggestion-item"); if (!item) return; $("merchantInput").value = item.dataset.merchant; $("merchantSuggestions").classList.remove("show"); });
+  $("merchantInput").addEventListener("blur", () => setTimeout(() => $("merchantSuggestions").classList.remove("show"), 180));
+  $("expenseForm").addEventListener("submit", event => { event.preventDefault(); saveExpense(); });
+  $("saveExpense").addEventListener("click", saveExpense);
+  $("expenseForm").addEventListener("keydown", event => {
+    if (event.key !== "Enter") return;
+    const controls = Array.from($("expenseForm").querySelectorAll("input,textarea")).filter(el => !el.disabled && el.type !== "hidden");
+    const current = controls.indexOf(event.target); if (current === -1) return;
+    event.preventDefault(); if (current < controls.length - 1) controls[current + 1].focus(); else saveExpense();
+  });
+  $("detectTransactions").addEventListener("click", () => { detectedTransactions = parsePastedTransactions($("pasteInput").value); renderReview(); showToast(detectedTransactions.length ? `${detectedTransactions.length} detected` : "No transactions detected"); });
+  $("reviewList").addEventListener("input", event => { const item = event.target.closest(".review-item"); if (!item) return; const idx = Number(item.dataset.reviewIndex); const field = event.target.dataset.reviewField; if (!field || !detectedTransactions[idx]) return; detectedTransactions[idx][field] = field === "amount" ? Number(event.target.value) : event.target.value; });
+  $("saveDetected").addEventListener("click", () => {
+    const valid = detectedTransactions.filter(t => t.merchant && Number(t.amount) > 0);
+    if (!valid.length) { showToast("Nothing to save"); return; }
+    state.expenses.push(...valid.map(t => ({ id: crypto.randomUUID(), amount: Number(t.amount), merchant: String(t.merchant).trim(), date: t.date || todayISO(), note: "", createdAt: Date.now() })));
+    detectedTransactions = []; $("pasteInput").value = ""; saveState(); renderAll(); route("home"); showToast(`${valid.length} transactions saved`);
+  });
+  $("searchInput").addEventListener("input", renderHistory);
+  $("saveSettings").addEventListener("click", () => { state.monthlyBudget = Number($("monthlyBudget").value || 0); saveState(); renderAll(); showToast("Settings saved"); });
+  $("exportJson").addEventListener("click", () => download(`money-budget-backup-${todayISO()}.json`, JSON.stringify(state, null, 2), "application/json"));
+  $("exportCsv").addEventListener("click", () => download(`money-budget-transactions-${todayISO()}.csv`, toCsv(), "text/csv"));
+  $("importJson").addEventListener("change", async event => { const file = event.target.files?.[0]; if (!file) return; try { state = normalizeLoadedState(JSON.parse(await file.text())); saveState(); renderAll(); route("home"); showToast("Backup imported"); } catch { showToast("Could not import file"); } finally { event.target.value = ""; } });
+  $("resetData").addEventListener("click", () => { if (!confirm("Delete all budget data stored in this browser?")) return; localStorage.removeItem(STORAGE_KEY); state = loadState(); renderAll(); route("home"); showToast("Data reset"); });
+}
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("service-worker.js").catch(() => {}));
+wireEvents(); $("dateInput").value = todayISO(); renderAll();

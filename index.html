@@ -18,15 +18,15 @@
       <section class="screen is-active" id="screen-home">
         <header class="home-header">
           <button class="circle-button" type="button" data-route="settings" aria-label="Settings">
-            <svg class="icon" viewBox="0 0 24 24"><path d="M12 15.25a3.25 3.25 0 1 0 0-6.5 3.25 3.25 0 0 0 0 6.5Z"/><path d="M19.38 13.4c.06-.46.06-.91 0-1.4l1.72-1.33-1.65-2.86-2.03.82c-.38-.3-.8-.55-1.25-.74L15.86 5.7h-3.72l-.31 2.19c-.45.19-.87.44-1.25.74l-2.03-.82-1.65 2.86L8.62 12c-.06.49-.06.94 0 1.4L6.9 14.73l1.65 2.86 2.03-.82c.38.3.8.55 1.25.74l.31 2.19h3.72l.31-2.19c.45-.19.87-.44 1.25-.74l2.03.82 1.65-2.86-1.72-1.33Z"/></svg>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"/><path d="M9 7v0M15 12v0M11 17v0"/></svg>
           </button>
           <button class="budget-pill" type="button">
             <span class="mini-dollar">$</span>
             <span>Budget</span>
-            <svg class="chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           <button class="circle-button" type="button" data-route="analytics" aria-label="Analytics">
-            <svg class="icon" viewBox="0 0 24 24"><path d="M12 3v9h9"/><path d="M21 12a9 9 0 1 1-9-9"/></svg>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9h9"/><path d="M21 12a9 9 0 1 1-9-9"/></svg>
           </button>
         </header>
 
@@ -39,8 +39,6 @@
           <div class="progress-track"><div class="progress-fill" id="budgetProgress"></div></div>
           <div class="summary-line" id="summaryLine">$0 of $0 spent · 0 days left</div>
         </section>
-
-        <div class="chip-scroller" id="homeChips"></div>
 
         <section class="quick-actions">
           <button class="action-row" type="button" data-route="add"><span class="action-icon">＋</span><span>Add transaction</span><span class="row-arrow">›</span></button>
@@ -60,7 +58,6 @@
           <div class="amount-field"><span>$</span><input id="amountInput" type="number" min="0" step="0.01" inputmode="decimal" enterkeyhint="next" placeholder="0.00" required /></div>
           <label class="field-label" for="merchantInput">Merchant / description</label>
           <div class="suggest-wrap"><input id="merchantInput" type="text" enterkeyhint="next" placeholder="e.g. Woolworths, Hungry Jacks" autocomplete="off" required /><div class="suggestions" id="merchantSuggestions"></div></div>
-          <label class="field-label" for="categoryInput">Category</label><select id="categoryInput" required></select>
           <label class="field-label" for="dateInput">Date</label><input id="dateInput" type="date" enterkeyhint="next" required />
           <label class="field-label" for="noteInput">Note</label><input id="noteInput" type="text" placeholder="Optional" autocomplete="off" />
           <button class="primary-button full-width" id="saveExpense" type="button">Save transaction</button>
@@ -71,7 +68,7 @@
         <header class="page-header"><button class="text-button" type="button" data-route="home">Cancel</button><h1>Paste transactions</h1><span></span></header>
         <section class="form-card">
           <p class="helper-text">Paste copied bank text. Merchant lines followed by amount lines will be detected.</p>
-          <textarea id="pasteInput" rows="8" placeholder="$&#10;H Js Devonport&#10;-$2.00&#10;Dominos&#10;-$21.26"></textarea>
+          <textarea id="pasteInput" rows="7" placeholder="$&#10;H Js Devonport&#10;-$2.00&#10;Dominos&#10;-$21.26"></textarea>
           <button class="primary-button full-width" id="detectTransactions" type="button">Detect transactions</button>
         </section>
         <section class="review-section" id="reviewSection" hidden>
@@ -83,7 +80,7 @@
 
       <section class="screen page-screen" id="screen-history">
         <header class="page-header simple"><h1>History</h1></header>
-        <div class="search-row"><input id="searchInput" type="search" placeholder="Search transactions" autocomplete="off" /><select id="historyCategoryFilter"><option value="">All</option></select></div>
+        <div class="search-row single"><input id="searchInput" type="search" placeholder="Search transactions" autocomplete="off" /></div>
         <div class="transaction-list" id="historyList"></div>
       </section>
 
@@ -91,8 +88,8 @@
         <header class="page-header simple"><h1>Analytics</h1></header>
         <section class="analytics-card"><div class="kicker">SPENDING THIS MONTH</div><div class="analytics-number" id="analyticsSpent">$0</div><div class="bar-chart" id="weeklyChart"></div></section>
         <section class="list-section">
-          <div class="list-heading"><div class="kicker">SPENDING BY CATEGORY</div><select id="analyticsSort" class="small-select"><option value="amount">Amount</option><option value="category">Category</option><option value="count">Count</option></select></div>
-          <div id="analyticsCategories"></div>
+          <div class="list-heading"><div class="kicker">TOP MERCHANTS</div><div class="heading-total" id="merchantSummary">$0</div></div>
+          <div id="analyticsMerchants"></div>
         </section>
         <section class="budget-mini-card"><div><div class="kicker">BUDGET</div><div class="mini-title" id="budgetMiniText">$0 left</div></div><div class="mini-percent" id="budgetMiniPercent">0%</div></section>
       </section>
@@ -101,20 +98,18 @@
         <header class="page-header simple"><h1>Settings</h1></header>
         <section class="form-card">
           <label class="field-label" for="monthlyBudget">Monthly budget</label><div class="money-input"><span>$</span><input id="monthlyBudget" type="number" min="0" step="0.01" inputmode="decimal" /></div>
-          <label class="field-label" for="budgetStartDay">Budget starts on day of month</label><input id="budgetStartDay" type="number" min="1" max="28" step="1" inputmode="numeric" />
           <button class="primary-button full-width" id="saveSettings" type="button">Save settings</button>
         </section>
         <section class="form-card"><h2>Data</h2><p class="helper-text">Your data stays in this browser on this device. Export a backup regularly.</p><div class="grid-two"><button class="secondary-button" id="exportJson" type="button">Export backup</button><label class="secondary-button file-label" for="importJson">Import backup</label><input id="importJson" class="hidden-file" type="file" accept="application/json,.json" /><button class="secondary-button" id="exportCsv" type="button">Export CSV</button><button class="danger-button" id="resetData" type="button">Reset all</button></div></section>
-        <section class="form-card"><h2>Categories</h2><div class="category-edit-list" id="categoryEditList"></div><div class="add-category-row"><input id="newCategoryName" type="text" placeholder="New category name" /><button class="secondary-button" id="addCategory" type="button">Add</button></div></section>
       </section>
     </main>
 
     <nav class="bottom-nav">
-      <button type="button" data-route="home" class="nav-button is-active"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M4.5 10.8 12 4.7l7.5 6.1V20h-5v-5.4h-5V20h-5v-9.2Z"/></svg><small>Home</small></button>
-      <button type="button" data-route="analytics" class="nav-button"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M5 19V9m7 10V5m7 14v-7"/></svg><small>Analytics</small></button>
-      <button type="button" data-route="add" class="nav-add"><svg class="nav-add-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
-      <button type="button" data-route="history" class="nav-button"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M6 7h12M6 12h12M6 17h12"/></svg><small>History</small></button>
-      <button type="button" data-route="settings" class="nav-button"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 15.25a3.25 3.25 0 1 0 0-6.5 3.25 3.25 0 0 0 0 6.5Z"/><path d="M19.38 13.4c.06-.46.06-.91 0-1.4l1.72-1.33-1.65-2.86-2.03.82c-.38-.3-.8-.55-1.25-.74L15.86 5.7h-3.72l-.31 2.19c-.45.19-.87.44-1.25.74l-2.03-.82-1.65 2.86L8.62 12c-.06.49-.06.94 0 1.4L6.9 14.73l1.65 2.86 2.03-.82c.38.3.8.55 1.25.74l.31 2.19h3.72l.31-2.19c.45-.19.87-.44 1.25-.74l2.03.82 1.65-2.86-1.72-1.33Z"/></svg><small>Settings</small></button>
+      <button type="button" data-route="home" class="nav-button is-active"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 10.8 12 4.7l7.5 6.1V20h-5v-5.4h-5V20h-5v-9.2Z"/></svg><small>Home</small></button>
+      <button type="button" data-route="analytics" class="nav-button"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9m7 10V5m7 14v-7"/></svg><small>Analytics</small></button>
+      <button type="button" data-route="add" class="nav-add"><svg class="nav-add-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button type="button" data-route="history" class="nav-button"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12M6 12h12M6 17h12"/></svg><small>History</small></button>
+      <button type="button" data-route="settings" class="nav-button"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"/><path d="M9 7v0M15 12v0M11 17v0"/></svg><small>Settings</small></button>
     </nav>
   </div>
   <div class="toast" id="toast"></div>
