@@ -1,7 +1,9 @@
 (function () {
   if (typeof document === "undefined") return;
+  if (window.__merchantLogoSupportLoaded) return;
+  window.__merchantLogoSupportLoaded = true;
 
-  const MERCHANT_LOGO_VERSION = "1.1";
+  const MERCHANT_LOGO_VERSION = "1.2";
 
   const merchantLogoRules = [
     { name: "Coles", matches: ["coles", "coles express"], logo: "logos/coles.png" },
@@ -35,25 +37,24 @@
 
   function getMerchantLogoInfo(merchant) {
     const normalized = normalizeMerchant(merchant);
-
     const rule = merchantLogoRules.find(item =>
       item.matches.some(match => normalized.includes(normalizeMerchant(match)))
     );
 
-    if (rule) {
+    if (!rule) {
       return {
-        type: "logo",
-        name: rule.name,
-        logo: rule.logo,
-        initials: initialsForMerchant(rule.name)
+        type: "initials",
+        name: merchant || "Other",
+        logo: "",
+        initials: initialsForMerchant(merchant)
       };
     }
 
     return {
-      type: "initials",
-      name: merchant || "Other",
-      logo: "",
-      initials: initialsForMerchant(merchant)
+      type: "logo",
+      name: rule.name,
+      logo: rule.logo,
+      initials: initialsForMerchant(rule.name)
     };
   }
 
@@ -68,143 +69,136 @@
     }[ch]));
   }
 
-  function logoMarkup(merchant) {
+  function logoInnerHtml(merchant) {
     const info = getMerchantLogoInfo(merchant);
-    const classes = "merchant-logo";
+    const initials = `<span class="merchant-logo-initials">${escapeValue(info.initials)}</span>`;
 
-    if (info.type === "logo") {
-      return `
-        <span class="${classes}" data-logo-for="${escapeValue(info.name)}">
-          <img src="${escapeValue(info.logo)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('logo-missing'); this.remove();" />
-          <span class="merchant-initials">${escapeValue(info.initials)}</span>
-        </span>
-      `;
-    }
+    if (info.type !== "logo") return initials;
 
     return `
-      <span class="${classes} logo-missing">
-        <span class="merchant-initials">${escapeValue(info.initials)}</span>
-      </span>
+      <img src="${escapeValue(info.logo)}" alt="" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
+      ${initials}
     `;
   }
 
-  function enhanceTransactionRows() {
-    const rows = document.querySelectorAll(".transaction-row, .editable-transaction-row, .drill-transaction-row");
-    rows.forEach(row => {
-      if (row.dataset.logoEnhanced === "true") return;
+  function enhanceTransactionRow(row) {
+    if (!row || row.dataset.logoEnhanced === "true") return;
 
-      const title =
-        row.querySelector(".transaction-title") ||
-        row.querySelector(".tx-title") ||
-        row.querySelector(".drill-merchant") ||
-        row.querySelector("strong") ||
-        row.querySelector(".merchant-name");
+    const title = row.querySelector(".row-title, .transaction-title, .tx-title, .merchant-name, strong");
+    if (!title) return;
 
-      if (!title) return;
+    const merchant = title.textContent.trim();
+    if (!merchant) return;
 
-      const merchant = title.textContent.trim();
-      row.classList.add("has-merchant-logo");
-      row.insertAdjacentHTML("afterbegin", logoMarkup(merchant));
+    let icon = row.querySelector(".category-icon");
+    if (icon) {
+      icon.classList.add("merchant-logo-icon");
+      icon.innerHTML = logoInnerHtml(merchant);
       row.dataset.logoEnhanced = "true";
-    });
+      return;
+    }
+
+    icon = document.createElement("div");
+    icon.className = "category-icon merchant-logo-icon";
+    icon.innerHTML = logoInnerHtml(merchant);
+    row.insertBefore(icon, row.firstElementChild);
+    row.classList.add("merchant-logo-added-column");
+    row.dataset.logoEnhanced = "true";
+  }
+
+  function enhanceAllRows() {
+    document
+      .querySelectorAll(".transaction-row, .editable-transaction-row, .drill-transaction-row")
+      .forEach(enhanceTransactionRow);
   }
 
   const style = document.createElement("style");
   style.textContent = `
-    .has-merchant-logo {
-      display: grid !important;
-      grid-template-columns: 40px minmax(0, 1fr) auto;
-      align-items: center;
-      column-gap: 10px;
-    }
-
-    .merchant-logo {
-      width: 36px;
-      height: 36px;
-      border-radius: 13px;
-      display: inline-grid;
-      place-items: center;
-      background: var(--surface, #fff);
-      border: 1px solid var(--line, #e5e5e5);
+    .category-icon.merchant-logo-icon {
+      background: var(--surface, #fff) !important;
+      color: var(--text, #111) !important;
+      border: 1px solid var(--line, #e5e5e5) !important;
       box-shadow: 0 4px 12px rgba(0,0,0,0.04);
       overflow: hidden;
-      flex: 0 0 auto;
+      padding: 4px;
+      display: grid !important;
+      place-items: center !important;
     }
 
-    .merchant-logo img {
-      width: 78%;
-      height: 78%;
+    .category-icon.merchant-logo-icon img {
+      width: 100%;
+      height: 100%;
       object-fit: contain;
       display: block;
     }
 
-    .merchant-logo .merchant-initials {
+    .merchant-logo-initials {
       display: none;
-      color: var(--text, #111);
       font-size: 12px;
-      font-weight: 750;
+      font-weight: 800;
       letter-spacing: -0.02em;
+      line-height: 1;
     }
 
-    .merchant-logo.logo-missing .merchant-initials {
+    .category-icon.merchant-logo-icon:not(:has(img)) .merchant-logo-initials {
       display: inline;
     }
 
-    .merchant-logo.logo-missing {
-      background: var(--accent-soft, #eef3ff);
-      color: var(--accent, #2563eb);
-      border-color: transparent;
+    .drill-transaction-row.merchant-logo-added-column {
+      grid-template-columns: 36px minmax(0, 1fr) auto !important;
     }
 
     @media (max-width: 380px) {
-      .has-merchant-logo {
-        grid-template-columns: 36px minmax(0, 1fr) auto;
-        column-gap: 8px;
-      }
-
-      .merchant-logo {
-        width: 32px;
-        height: 32px;
-        border-radius: 11px;
+      .category-icon.merchant-logo-icon {
+        padding: 3px;
       }
     }
   `;
   document.head.appendChild(style);
 
+  const originalRenderAll = typeof renderAll === "function" ? renderAll : null;
+  const originalRenderHome = typeof renderHome === "function" ? renderHome : null;
+  const originalRenderHistory = typeof renderHistory === "function" ? renderHistory : null;
+  const originalRenderAnalytics = typeof renderAnalytics === "function" ? renderAnalytics : null;
+
+  if (originalRenderAll) {
+    renderAll = function (...args) {
+      const result = originalRenderAll.apply(this, args);
+      setTimeout(enhanceAllRows, 0);
+      return result;
+    };
+  }
+
+  if (originalRenderHome) {
+    renderHome = function (...args) {
+      const result = originalRenderHome.apply(this, args);
+      setTimeout(enhanceAllRows, 0);
+      return result;
+    };
+  }
+
+  if (originalRenderHistory) {
+    renderHistory = function (...args) {
+      const result = originalRenderHistory.apply(this, args);
+      setTimeout(enhanceAllRows, 0);
+      return result;
+    };
+  }
+
+  if (originalRenderAnalytics) {
+    renderAnalytics = function (...args) {
+      const result = originalRenderAnalytics.apply(this, args);
+      setTimeout(enhanceAllRows, 0);
+      return result;
+    };
+  }
+
   window.getMerchantLogoInfo = getMerchantLogoInfo;
-  window.merchantLogoMarkup = logoMarkup;
-  window.enhanceMerchantLogos = enhanceTransactionRows;
+  window.enhanceMerchantLogos = enhanceAllRows;
 
-  function installRenderHooks() {
-    const hooks = ["renderAll", "renderHome", "renderTransactions", "renderHistory", "renderAnalytics"];
-    hooks.forEach(name => {
-      if (typeof window[name] !== "function") return;
-      if (window[name].__merchantLogoHooked) return;
+  const observer = new MutationObserver(() => enhanceAllRows());
+  observer.observe(document.body, { childList: true, subtree: true });
 
-      const original = window[name];
-      const wrapped = function (...args) {
-        const result = original.apply(this, args);
-        setTimeout(window.enhanceMerchantLogos, 0);
-        return result;
-      };
-      wrapped.__merchantLogoHooked = true;
-      window[name] = wrapped;
-    });
-  }
-
-  function boot() {
-    installRenderHooks();
-    window.enhanceMerchantLogos();
-
-    const observer = new MutationObserver(() => window.enhanceMerchantLogos());
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    console.info("Merchant logo support loaded", MERCHANT_LOGO_VERSION);
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
-  } else {
-    boot();
-  }
+  setTimeout(enhanceAllRows, 0);
+  console.info("Merchant logo support loaded", MERCHANT_LOGO_VERSION);
 })();
