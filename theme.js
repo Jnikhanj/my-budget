@@ -350,3 +350,172 @@
 
   setTimeout(() => renderAll(), 0);
 })();
+
+(function () {
+  if (typeof document === "undefined") return;
+  if (typeof state === "undefined" || typeof currentExpenses !== "function" || typeof categoryTotals !== "function") return;
+
+  let analyticsOpenCategoryId = "";
+
+  const style = document.createElement("style");
+  style.textContent = `
+    .app-shell { padding-top: calc(env(safe-area-inset-top, 0px) + 34px); }
+    .bar-chart { display: block; height: 182px; padding-top: 0; border-bottom: 0; }
+    .line-chart-card { width: 100%; height: 100%; display: grid; grid-template-rows: 1fr auto; gap: 4px; }
+    .line-chart-svg { width: 100%; height: 148px; overflow: visible; }
+    .chart-grid-line { stroke: var(--line); stroke-width: 1.25; vector-effect: non-scaling-stroke; }
+    .chart-grid-line.faint { opacity: 0.55; stroke-dasharray: 4 5; }
+    .chart-area { fill: var(--accent-soft); opacity: 0.9; }
+    .chart-line { fill: none; stroke: var(--accent); stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+    .chart-point { fill: var(--surface); stroke: var(--accent); stroke-width: 3; vector-effect: non-scaling-stroke; }
+    .chart-value { fill: var(--text); font-size: 10px; font-weight: 650; text-anchor: middle; dominant-baseline: auto; }
+    .line-chart-labels { display: grid; grid-template-columns: repeat(5, 1fr); color: var(--muted); font-size: 12px; font-weight: 520; text-align: center; }
+    .category-drill-hint { color: var(--muted); font-size: 13px; margin: 4px 0 8px; }
+    .category-drill-block { border-bottom: 1px solid var(--line); }
+    .category-drill-block:last-child { border-bottom: 0; }
+    .category-budget-row.category-drill-row { width: 100%; min-height: 64px; border: 0; border-radius: 0; border-bottom: 0; background: transparent; color: var(--text); text-align: left; padding: 10px 0; }
+    .category-budget-row.category-drill-row:active { transform: none; opacity: 0.72; }
+    .category-budget-row.category-drill-row.is-open { padding-bottom: 8px; }
+    .category-row-end { display: flex; align-items: center; gap: 7px; justify-content: end; }
+    .drill-chevron { color: var(--muted); font-size: 14px; font-weight: 650; line-height: 1; min-width: 12px; text-align: right; }
+    .category-drilldown { margin: 0 0 8px 46px; padding: 6px 0 8px; border-top: 1px solid var(--line); }
+    .drill-transaction-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; min-height: 48px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .drill-transaction-row:last-child { border-bottom: 0; }
+    .drill-transaction-row .row-title, .drill-transaction-row .row-amount { font-size: 15px; }
+    @media (max-width: 380px) { .analytics-number { font-size: 40px; } .chart-value { font-size: 9px; } }
+  `;
+  document.head.appendChild(style);
+
+  function safe(value) {
+    if (typeof escapeHtml === "function") return escapeHtml(value);
+    return String(value ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[ch]));
+  }
+
+  renderWeeklyChart = function renderWeeklyLineChart() {
+    const expenses = currentExpenses();
+    const { start } = getCurrentMonthPeriod();
+    const buckets = [0, 0, 0, 0, 0];
+    const labels = ["1–7", "8–14", "15–21", "22–28", "29+"];
+
+    for (const expense of expenses) {
+      const idx = Math.min(4, Math.floor((parseDate(expense.date) - start) / (7 * 86400000)));
+      if (idx >= 0) buckets[idx] += Number(expense.amount || 0);
+    }
+
+    const max = Math.max(1, ...buckets);
+    const width = 320;
+    const height = 150;
+    const padX = 22;
+    const padTop = 24;
+    const padBottom = 28;
+    const plotHeight = height - padTop - padBottom;
+    const step = (width - padX * 2) / (labels.length - 1);
+    const baseY = height - padBottom;
+
+    const points = buckets.map((value, index) => {
+      const x = padX + index * step;
+      const y = baseY - (value / max) * plotHeight;
+      return { x, y, value, label: labels[index] };
+    });
+
+    const linePoints = points.map(point => `${point.x},${point.y}`).join(" ");
+    const areaPoints = `${padX},${baseY} ${linePoints} ${width - padX},${baseY}`;
+    const chartLabel = buckets.map((value, index) => `${labels[index]} ${money(value)}`).join(", ");
+
+    $("weeklyChart").innerHTML = `
+      <div class="line-chart-card" role="img" aria-label="Weekly spending trend: ${safe(chartLabel)}">
+        <svg class="line-chart-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
+          <line class="chart-grid-line" x1="${padX}" y1="${baseY}" x2="${width - padX}" y2="${baseY}" />
+          <line class="chart-grid-line faint" x1="${padX}" y1="${padTop + plotHeight / 2}" x2="${width - padX}" y2="${padTop + plotHeight / 2}" />
+          <polygon class="chart-area" points="${areaPoints}" />
+          <polyline class="chart-line" points="${linePoints}" />
+          ${points.map(point => `
+            <circle class="chart-point" cx="${point.x}" cy="${point.y}" r="4.5" />
+            ${point.value > 0 ? `<text class="chart-value" x="${point.x}" y="${Math.max(12, point.y - 9)}">${money(point.value)}</text>` : ""}
+          `).join("")}
+        </svg>
+        <div class="line-chart-labels">
+          ${labels.map(label => `<span>${label}</span>`).join("")}
+        </div>
+      </div>
+    `;
+  };
+
+  renderAnalytics = function renderEnhancedAnalytics() {
+    const status = budgetStatus();
+    $("analyticsSpent").textContent = money(status.spent);
+    $("budgetMiniText").textContent = `${money(status.left)} available`;
+    $("budgetMiniPercent").textContent = `${Math.round(status.usedPercent)}%`;
+    renderWeeklyChart();
+    renderInsights();
+
+    const cats = categoryTotals();
+    const sortBy = $("analyticsSort").value;
+    if (sortBy === "category") cats.sort((a, b) => a.name.localeCompare(b.name));
+    if (sortBy === "count") cats.sort((a, b) => b.count - a.count);
+
+    if (analyticsOpenCategoryId && !cats.some(row => row.id === analyticsOpenCategoryId)) analyticsOpenCategoryId = "";
+
+    $("analyticsCategories").innerHTML = cats.length ? `
+      <div class="category-drill-hint">Tap a category to view individual transactions.</div>
+      ${cats.map(renderAnalyticsCategory).join("")}
+    ` : `<div class="empty-card">No category spending</div>`;
+
+    $("analyticsCategories").querySelectorAll("[data-analytics-category]").forEach(row => {
+      row.addEventListener("click", () => {
+        const id = row.dataset.analyticsCategory;
+        analyticsOpenCategoryId = analyticsOpenCategoryId === id ? "" : id;
+        renderAnalytics();
+      });
+    });
+  };
+
+  function renderAnalyticsCategory(row) {
+    const budget = Number(state.categoryBudgets?.[row.id] || 0);
+    const percent = budget > 0 ? Math.min(100, (row.amount / budget) * 100) : 0;
+    const subtitle = budget > 0 ? `${money(row.amount)} of ${money(budget)}` : `${row.count} transaction${row.count === 1 ? "" : "s"}`;
+    const isOpen = analyticsOpenCategoryId === row.id;
+
+    return `
+      <div class="category-drill-block">
+        <button class="category-budget-row category-drill-row ${isOpen ? "is-open" : ""}" type="button" data-analytics-category="${safe(row.id)}" aria-expanded="${isOpen}">
+          <div class="category-icon">${categoryInitial(row.name)}</div>
+          <div>
+            <div class="row-title">${safe(row.name)}</div>
+            <div class="row-subtitle">${subtitle}</div>
+            ${budget > 0 ? `<div class="mini-progress"><span style="width:${percent}%"></span></div>` : ""}
+          </div>
+          <div class="category-row-end">
+            <div class="row-amount">${money(row.amount)}</div>
+            <div class="drill-chevron">${isOpen ? "⌃" : "⌄"}</div>
+          </div>
+        </button>
+        ${isOpen ? renderCategoryTransactions(row.id) : ""}
+      </div>
+    `;
+  }
+
+  function renderCategoryTransactions(categoryId) {
+    const rows = currentExpenses().filter(expense => expense.categoryId === categoryId).sort(byNewest);
+    if (!rows.length) return `<div class="category-drilldown"><div class="empty-card">No transactions</div></div>`;
+
+    return `
+      <div class="category-drilldown">
+        ${rows.map(expense => `
+          <div class="drill-transaction-row">
+            <div>
+              <div class="row-title">${safe(expense.merchant)}</div>
+              <div class="row-subtitle">
+                ${parseDate(expense.date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}${expense.note ? ` · ${safe(expense.note)}` : ""}
+              </div>
+            </div>
+            <div class="row-amount">${money(expense.amount)}</div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  $("analyticsSort")?.addEventListener("change", renderAnalytics);
+  setTimeout(() => renderAnalytics(), 0);
+})();
