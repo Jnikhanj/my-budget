@@ -3,16 +3,19 @@
   if (window.__merchantLogoSupportLoaded) return;
   window.__merchantLogoSupportLoaded = true;
 
-  const MERCHANT_LOGO_VERSION = "1.2";
+  const MERCHANT_LOGO_VERSION = "1.3";
 
   const merchantLogoRules = [
     { name: "Coles", matches: ["coles", "coles express"], logo: "logos/coles.png" },
+    { name: "Woolworths", matches: ["woolworths", "woolies", "woolworth", "ww metro", "woolworths metro"], logo: "logos/woolworths.svg" },
     { name: "Kmart", matches: ["kmart"], logo: "logos/kmart.png" },
+    { name: "Toyota", matches: ["toyota", "toyota finance", "toyota connect"], logo: "logos/toyota.svg" },
     { name: "Spotify", matches: ["spotify"], logo: "logos/spotify.png" },
     { name: "Netflix", matches: ["netflix"], logo: "logos/netflix.png" },
     { name: "KFC", matches: ["kfc", "kentucky fried chicken"], logo: "logos/kfc.png" },
     { name: "Hungry Jack's", matches: ["hungry jack", "hungry jacks"], logo: "logos/hungry-jacks.png" },
-    { name: "McDonald's", matches: ["mcdonald", "maccas"], logo: "logos/mcdonalds.png" }
+    { name: "McDonald's", matches: ["mcdonald", "maccas"], logo: "logos/mcdonalds.png" },
+    { name: "Domino's", matches: ["domino", "dominos", "domino's"], logo: "logos/dominos.svg" }
   ];
 
   function normalizeMerchant(value) {
