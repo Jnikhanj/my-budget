@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Money" />
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icon-192.png" />
-  <link rel="stylesheet" href="style.css?v=6.0" />
+  <link rel="stylesheet" href="style.css?v=7.2" />
   <title>Money Budget</title>
 </head>
 <body data-route="home">
@@ -42,7 +42,7 @@
           <div class="progress-track">
             <div class="progress-fill" id="budgetProgress"></div>
           </div>
-          <div class="summary-line" id="summaryLine">$0 of $0 spent · 0 days left</div>
+          <div class="summary-line" id="summaryLine">$0 of $0 spent - 0 days left</div>
         </section>
 
         <section class="quick-actions">
@@ -61,7 +61,7 @@
         <section class="list-section">
           <div class="list-heading">
             <div class="kicker">Recent transactions</div>
-            <div class="heading-total" id="homeListTotal">$0 · 0 txns</div>
+            <div class="heading-total" id="homeListTotal">$0 - 0 txns</div>
           </div>
           <div class="transaction-list" id="homeTransactions"></div>
         </section>
@@ -109,7 +109,7 @@
 
         <section class="form-card">
           <p class="helper-text">Paste copied bank text. Dates, merchants and amounts will be detected where possible.</p>
-          <textarea id="pasteInput" rows="8" placeholder="7 Jun 2026&#10;H Js Devonport&#10;-$2.00&#10;7 Jun&#10;Dominos&#10;-$21.26"></textarea>
+          <textarea id="pasteInput" rows="8" placeholder="Paste copied bank transactions here"></textarea>
           <button class="primary-button full-width" id="detectTransactions" type="button">Review import</button>
         </section>
 
@@ -163,7 +163,7 @@
 
         <section class="budget-mini-card">
           <div>
-            <div class="kicker">BUDGET</div>
+            <div class="kicker">Budget</div>
             <div class="mini-title" id="budgetMiniText">$0 left</div>
           </div>
           <div class="mini-percent" id="budgetMiniPercent">0%</div>
@@ -269,7 +269,8 @@
   </div>
 
   <div class="toast" id="toast"></div>
-  <script src="app.js?v=6.0"></script>
-  <script src="theme.js?v=6.0"></script>
+  <script src="app.js?v=7.2"></script>
+  <script src="theme.js?v=7.2"></script>
+  <script src="budget-pace.js?v=7.2"></script>
 </body>
 </html>
