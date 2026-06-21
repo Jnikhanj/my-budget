@@ -1,11 +1,11 @@
-const CACHE_NAME = "money-budget-cache-v7-2";
+const CACHE_NAME = "money-budget-cache-v7-3";
 const ASSETS = [
   "./",
   "./index.html",
   "./style.css?v=7.2",
   "./app.js?v=7.2",
   "./theme.js?v=7.2",
-  "./budget-pace.js?v=7.2",
+  "./budget-pace.js?v=7.3",
   "./manifest.json",
   "./service-worker.js",
   "./icon-192.png",
@@ -18,10 +18,7 @@ self.addEventListener("install", event => {
 });
 
 self.addEventListener("activate", event => {
-  event.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
-  );
-  self.clients.claim();
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener("fetch", event => {
