@@ -3,13 +3,13 @@
   if (window.__merchantLogoSupportLoaded) return;
   window.__merchantLogoSupportLoaded = true;
 
-  const MERCHANT_LOGO_VERSION = "1.3";
+  const MERCHANT_LOGO_VERSION = "1.4";
 
   const merchantLogoRules = [
     { name: "Coles", matches: ["coles", "coles express"], logo: "logos/coles.png" },
-    { name: "Woolworths", matches: ["woolworths", "woolies", "woolworth", "ww metro", "woolworths metro"], logo: "logos/woolworths.svg" },
+    { name: "Woolworths", matches: ["woolworths", "woolies", "woolworth", "ww metro", "woolworths metro"], logo: "logos/woolworths.svg?v=1.4" },
     { name: "Kmart", matches: ["kmart"], logo: "logos/kmart.png" },
-    { name: "Toyota", matches: ["toyota", "toyota finance", "toyota connect"], logo: "logos/toyota.svg" },
+    { name: "Toyota", matches: ["toyota", "toyota finance", "toyota connect"], logo: "logos/toyota.svg?v=1.4" },
     { name: "Spotify", matches: ["spotify"], logo: "logos/spotify.png" },
     { name: "Netflix", matches: ["netflix"], logo: "logos/netflix.png" },
     { name: "KFC", matches: ["kfc", "kentucky fried chicken"], logo: "logos/kfc.png" },
@@ -27,38 +27,16 @@
   }
 
   function initialsForMerchant(value) {
-    const cleaned = String(value || "Other")
+    const words = String(value || "Other")
       .replace(/[^a-zA-Z0-9\s]/g, " ")
       .replace(/\s+/g, " ")
-      .trim();
+      .trim()
+      .split(" ")
+      .filter(Boolean);
 
-    const words = cleaned.split(" ").filter(Boolean);
     if (!words.length) return "•";
     if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
     return (words[0][0] + words[1][0]).toUpperCase();
-  }
-
-  function getMerchantLogoInfo(merchant) {
-    const normalized = normalizeMerchant(merchant);
-    const rule = merchantLogoRules.find(item =>
-      item.matches.some(match => normalized.includes(normalizeMerchant(match)))
-    );
-
-    if (!rule) {
-      return {
-        type: "initials",
-        name: merchant || "Other",
-        logo: "",
-        initials: initialsForMerchant(merchant)
-      };
-    }
-
-    return {
-      type: "logo",
-      name: rule.name,
-      logo: rule.logo,
-      initials: initialsForMerchant(rule.name)
-    };
   }
 
   function escapeValue(value) {
@@ -70,6 +48,19 @@
       '"': "&quot;",
       "'": "&#039;"
     }[ch]));
+  }
+
+  function getMerchantLogoInfo(merchant) {
+    const normalized = normalizeMerchant(merchant);
+    const rule = merchantLogoRules.find(item =>
+      item.matches.some(match => normalized.includes(normalizeMerchant(match)))
+    );
+
+    if (!rule) {
+      return { type: "initials", name: merchant || "Other", logo: "", initials: initialsForMerchant(merchant) };
+    }
+
+    return { type: "logo", name: rule.name, logo: rule.logo, initials: initialsForMerchant(rule.name) };
   }
 
   function logoInnerHtml(merchant) {
@@ -159,42 +150,16 @@
   `;
   document.head.appendChild(style);
 
-  const originalRenderAll = typeof renderAll === "function" ? renderAll : null;
-  const originalRenderHome = typeof renderHome === "function" ? renderHome : null;
-  const originalRenderHistory = typeof renderHistory === "function" ? renderHistory : null;
-  const originalRenderAnalytics = typeof renderAnalytics === "function" ? renderAnalytics : null;
+  ["renderAll", "renderHome", "renderHistory", "renderAnalytics"].forEach(name => {
+    const original = window[name];
+    if (typeof original !== "function") return;
 
-  if (originalRenderAll) {
-    renderAll = function (...args) {
-      const result = originalRenderAll.apply(this, args);
+    window[name] = function (...args) {
+      const result = original.apply(this, args);
       setTimeout(enhanceAllRows, 0);
       return result;
     };
-  }
-
-  if (originalRenderHome) {
-    renderHome = function (...args) {
-      const result = originalRenderHome.apply(this, args);
-      setTimeout(enhanceAllRows, 0);
-      return result;
-    };
-  }
-
-  if (originalRenderHistory) {
-    renderHistory = function (...args) {
-      const result = originalRenderHistory.apply(this, args);
-      setTimeout(enhanceAllRows, 0);
-      return result;
-    };
-  }
-
-  if (originalRenderAnalytics) {
-    renderAnalytics = function (...args) {
-      const result = originalRenderAnalytics.apply(this, args);
-      setTimeout(enhanceAllRows, 0);
-      return result;
-    };
-  }
+  });
 
   window.getMerchantLogoInfo = getMerchantLogoInfo;
   window.enhanceMerchantLogos = enhanceAllRows;
