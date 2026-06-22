@@ -1,1 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="Woolworths logo"><rect width="160" height="160" rx="28" fill="transparent"/><g transform="translate(0 2)"><path d="M80 28c19-22 47-19 59-4 10 13 8 32-2 49-13 23-38 39-64 37 14-11 22-27 22-44 0-18-6-32-15-38z" fill="#b5cf35"/><path d="M80 28c-19-22-47-19-59-4-10 13-8 32 2 49 13 23 38 39 64 37-14-11-22-27-22-44 0-18 6-32 15-38z" fill="#8bb94e"/><path d="M57 78c0-25 18-41 40-36 17 4 28 22 28 45 0 25-18 45-45 48-24 3-43-9-53-29 16 9 33 11 48 4-11-8-18-19-18-32z" fill="#3f8f46"/><path d="M80 52c18 0 30 16 30 39 0 18-9 32-24 40 7-12 10-24 10-38 0-18-6-32-16-41z" fill="#c8d94b"/></g><text x="80" y="147" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#075d2b">Woolworths</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="Woolworths logo">
+  <rect width="160" height="160" fill="transparent"/>
+  <g transform="translate(6 8) scale(0.92)">
+    <path d="M80 13C98 -5 129 3 139 23C122 15 101 15 88 28C82 34 78 42 76 51C73 39 73 25 80 13Z" fill="url(#ww1)"/>
+    <path d="M30 47C45 26 75 25 91 44C74 44 58 50 50 64C42 78 44 96 55 111C33 108 17 94 12 76C9 64 15 55 30 47Z" fill="url(#ww2)"/>
+    <path d="M104 44C120 25 150 26 165 47C180 68 172 98 147 111C156 95 158 78 150 64C142 50 126 44 104 44Z" fill="url(#ww3)"/>
+    <path d="M69 76C69 54 85 41 105 47C121 52 132 69 132 92C132 120 111 142 80 144C52 146 30 131 21 108C38 118 58 118 74 108C69 100 66 89 69 76Z" fill="url(#ww4)"/>
+    <path d="M80 64C98 64 109 79 109 101C109 116 103 128 91 136C94 126 96 115 96 103C96 84 90 71 80 64Z" fill="url(#ww5)"/>
+  </g>
+  <defs>
+    <linearGradient id="ww1" x1="104" y1="0" x2="104" y2="58" gradientUnits="userSpaceOnUse"><stop stop-color="#d4e451"/><stop offset="1" stop-color="#63ad46"/></linearGradient>
+    <linearGradient id="ww2" x1="51" y1="24" x2="51" y2="112" gradientUnits="userSpaceOnUse"><stop stop-color="#b9d84a"/><stop offset="1" stop-color="#4d9647"/></linearGradient>
+    <linearGradient id="ww3" x1="134" y1="24" x2="134" y2="112" gradientUnits="userSpaceOnUse"><stop stop-color="#b9d84a"/><stop offset="1" stop-color="#4d9647"/></linearGradient>
+    <linearGradient id="ww4" x1="76" y1="42" x2="76" y2="145" gradientUnits="userSpaceOnUse"><stop stop-color="#5da34a"/><stop offset="0.52" stop-color="#bcd94a"/><stop offset="1" stop-color="#18964e"/></linearGradient>
+    <linearGradient id="ww5" x1="96" y1="64" x2="96" y2="136" gradientUnits="userSpaceOnUse"><stop stop-color="#d2e550"/><stop offset="1" stop-color="#79b84b"/></linearGradient>
+  </defs>
+</svg>
