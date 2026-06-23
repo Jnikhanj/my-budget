@@ -7,9 +7,9 @@
 
   const merchantLogoRules = [
     { name: "Coles", matches: ["coles", "coles express"], logo: "logos/coles.png" },
-    { name: "Woolworths", matches: ["woolworths", "woolies", "woolworth", "ww metro", "woolworths metro"], logo: "logos/woolworths.svg?v=1.4" },
+    { name: "Woolworths", matches: ["woolworths", "woolies", "woolworth", "ww metro", "woolworths metro"], logo: "logos/woolworths.png?v=1.5" },
     { name: "Kmart", matches: ["kmart"], logo: "logos/kmart.png" },
-    { name: "Toyota", matches: ["toyota", "toyota finance", "toyota connect"], logo: "logos/toyota.svg?v=1.4" },
+    { name: "Toyota", matches: ["toyota", "toyota finance", "toyota connect"], logo: "logos/toyota.png?v=1.5" },
     { name: "Spotify", matches: ["spotify"], logo: "logos/spotify.png" },
     { name: "Netflix", matches: ["netflix"], logo: "logos/netflix.png" },
     { name: "KFC", matches: ["kfc", "kentucky fried chicken"], logo: "logos/kfc.png" },
