@@ -1,5 +1,5 @@
-const CACHE_NAME = "money-budget-dev-v8-logo-fix-14";
-const MERCHANT_LOGO_SCRIPT = '<script src="./merchant-logos.js?v=1.4" data-auto-merchant-logos></script>';
+const CACHE_NAME = "money-budget-dev-v8-logo-fix-15";
+const MERCHANT_LOGO_SCRIPT = '<script src="./merchant-logos.js?v=1.5" data-auto-merchant-logos></script>';
 
 function injectMerchantLogoScript(html) {
   if (!html || html.includes("data-auto-merchant-logos") || html.includes("merchant-logos.js")) return html;
