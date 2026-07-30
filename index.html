@@ -9,10 +9,10 @@
   <meta name="apple-mobile-web-app-title" content="Money" />
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icon-192.png" />
-  <link rel="stylesheet" href="style.css?v=8.0" />
+  <link rel="stylesheet" href="style.css?v=10.4" />
   <title>Money Budget</title>
 </head>
-<body data-route="home">
+<body data-route="home" data-subscription-view="list">
   <div class="app-shell">
     <main>
       <section class="screen is-active" id="screen-home">
@@ -23,11 +23,18 @@
               <path d="M4 17h2"/><path d="M10 17h10"/><circle cx="8" cy="17" r="2"/>
             </svg>
           </button>
-          <button class="budget-pill" type="button" aria-label="Monthly budget">
-            <span class="mini-dollar">$</span>
+          <div class="budget-pill" aria-label="Overview">
+            <span class="mini-brand" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <rect width="24" height="24" rx="6" fill="#17366f"/>
+                <rect x="4" y="5" width="16" height="15" rx="3" fill="#fffaf2"/>
+                <path d="M4 9h16" stroke="#3576eb" stroke-width="2"/>
+                <path d="m7 16 3-3 3 2 4-5" fill="none" stroke="#ffad1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="17" cy="10" r="1.6" fill="#30ced2"/>
+              </svg>
+            </span>
             <span>Overview</span>
-            <svg class="chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
-          </button>
+          </div>
           <button class="circle-button" type="button" data-route="analytics" aria-label="Analytics">
             <svg class="icon" viewBox="0 0 24 24"><path d="M12 3v9h9"/><path d="M21 12a9 9 0 1 1-9-9"/></svg>
           </button>
@@ -36,7 +43,7 @@
         <section class="summary-block">
           <div class="summary-row">
             <div class="kicker">Available</div>
-            <button class="currency-pill" type="button">AUD</button>
+            <button class="currency-pill" type="button" data-currency-toggle>AUD</button>
           </div>
           <div class="hero-number" id="leftAmount">$0</div>
           <div class="progress-track">
@@ -49,55 +56,69 @@
           <button class="action-row" type="button" data-route="add">
             <span class="action-icon">＋</span>
             <span>New transaction</span>
-            <span class="row-arrow">›</span>
           </button>
           <button class="action-row" type="button" data-route="paste">
             <span class="action-icon">↧</span>
             <span>Import transactions</span>
-            <span class="row-arrow">›</span>
           </button>
         </section>
 
         <section class="list-section">
           <div class="list-heading">
             <div class="kicker">Recent transactions</div>
-            <div class="heading-total" id="homeListTotal">$0 - 0 txns</div>
+            <button class="heading-link" type="button" data-route="history">
+              <span>View all</span>
+              <span class="heading-total" id="homeListTotal">0 transactions</span>
+            </button>
           </div>
           <div class="transaction-list" id="homeTransactions"></div>
         </section>
       </section>
 
-      <section class="screen page-screen" id="screen-add">
-        <header class="page-header">
-          <button class="text-button" id="cancelAdd" type="button" data-route="home">Cancel</button>
-          <h1>New transaction</h1>
-          <span></span>
-        </header>
+      <section class="screen page-screen editor-overlay" id="screen-add">
+        <div class="editor-sheet" role="dialog" aria-modal="true" aria-labelledby="addTransactionTitle">
+          <header class="page-header">
+            <button class="text-button" id="cancelAdd" type="button" data-route="home">Cancel</button>
+            <h1 id="addTransactionTitle">New transaction</h1>
+            <span></span>
+          </header>
 
-        <section class="form-card" id="expenseEditor">
-          <label class="field-label" for="amountInput">Amount</label>
-          <div class="amount-field">
-            <span>$</span>
-            <input id="amountInput" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" />
-          </div>
+          <section class="form-card" id="expenseEditor">
+            <label class="field-label" for="amountInput">Amount</label>
+            <div class="amount-currency-row">
+              <div class="amount-field">
+                <span id="transactionCurrencySymbol">$</span>
+                <input id="amountInput" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" />
+              </div>
+              <select id="transactionCurrency" aria-label="Currency">
+                <option value="AUD">AUD</option>
+                <option value="INR">INR</option>
+              </select>
+            </div>
 
-          <label class="field-label" for="merchantInput">Merchant</label>
-          <div class="suggest-wrap">
-            <input id="merchantInput" type="text" placeholder="Name or description" autocomplete="off" />
-            <div class="suggestions" id="merchantSuggestions"></div>
-          </div>
+            <label class="field-label" for="merchantInput">Merchant</label>
+            <div class="suggest-wrap">
+              <input id="merchantInput" type="text" placeholder="Name or description" autocomplete="off" />
+              <div class="suggestions" id="merchantSuggestions"></div>
+            </div>
 
-          <label class="field-label" for="categoryInput">Category</label>
-          <select id="categoryInput" required></select>
+            <div class="grid-two">
+              <div>
+                <label class="field-label" for="categoryInput">Category</label>
+                <select id="categoryInput" required></select>
+              </div>
+              <div>
+                <label class="field-label" for="dateInput">Date</label>
+                <input id="dateInput" type="date" required />
+              </div>
+            </div>
 
-          <label class="field-label" for="dateInput">Date</label>
-          <input id="dateInput" type="date" required />
+            <label class="field-label" for="noteInput">Note</label>
+            <input id="noteInput" type="text" placeholder="Optional" autocomplete="off" />
 
-          <label class="field-label" for="noteInput">Note</label>
-          <input id="noteInput" type="text" placeholder="Optional" autocomplete="off" />
-
-          <button class="primary-button full-width" id="saveTransaction" type="button">Save</button>
-        </section>
+            <button class="primary-button full-width sheet-save" id="saveTransaction" type="button">Save</button>
+          </section>
+        </div>
       </section>
 
       <section class="screen page-screen" id="screen-paste">
@@ -108,9 +129,9 @@
         </header>
 
         <section class="form-card">
-          <p class="helper-text">Paste copied bank text. Dates, merchants and amounts will be detected where possible.</p>
-          <textarea id="pasteInput" rows="8" placeholder="Paste copied bank transactions here"></textarea>
-          <button class="primary-button full-width" id="detectTransactions" type="button">Review import</button>
+          <p class="helper-text">Paste bank text to detect dates, merchants and amounts.</p>
+          <textarea id="pasteInput" rows="7" aria-label="Bank transaction text"></textarea>
+          <button class="primary-button full-width" id="detectTransactions" type="button" disabled>Review import</button>
         </section>
 
         <section class="review-section" id="reviewSection" hidden>
@@ -129,7 +150,7 @@
         </header>
 
         <div class="search-row">
-          <input id="searchInput" type="search" placeholder="Search transactions" autocomplete="off" />
+          <div class="search-field"><span aria-hidden="true">⌕</span><input id="searchInput" type="search" placeholder="Search transactions" autocomplete="off" /></div>
           <select id="historyCategoryFilter"><option value="">All</option></select>
         </div>
 
@@ -165,9 +186,124 @@
           <div>
             <div class="kicker">Budget</div>
             <div class="mini-title" id="budgetMiniText">$0 left</div>
+            <div class="mini-progress budget-overall-progress"><span id="budgetMiniProgress"></span></div>
           </div>
-          <div class="mini-percent" id="budgetMiniPercent">0%</div>
+          <div class="mini-percent" id="budgetMiniPercent">0% used</div>
         </section>
+      </section>
+
+      <section class="screen page-screen" id="screen-subscriptions">
+        <header class="page-header simple subscription-header">
+          <h1>Subscriptions</h1>
+        </header>
+
+        <section class="subscription-summary">
+          <div class="subscription-stat">
+            <div class="kicker">Monthly · <span id="subscriptionCurrencyLabel">AUD</span></div>
+            <div class="subscription-total" id="subscriptionMonthlyTotal">$0</div>
+          </div>
+          <div class="subscription-stat">
+            <div class="kicker">Yearly · <span id="subscriptionYearlyCurrencyLabel">AUD</span></div>
+            <div class="subscription-total" id="subscriptionYearlyTotal">$0</div>
+          </div>
+        </section>
+        <div class="subscription-count" id="subscriptionCount">0 active</div>
+
+        <div class="segmented-control" id="subscriptionViewToggle" aria-label="Subscription view">
+          <button class="is-active" type="button" data-subscription-view="list">List</button>
+          <button type="button" data-subscription-view="calendar">Calendar</button>
+        </div>
+
+        <section class="subscription-list-view">
+          <div class="subscription-list" id="subscriptionList"></div>
+        </section>
+
+        <section class="subscription-calendar-view">
+          <div class="calendar-toolbar">
+            <button class="circle-button compact" id="subscriptionCalendarPrevious" type="button" aria-label="Previous month">‹</button>
+            <h2 id="subscriptionCalendarTitle">Month</h2>
+            <button class="circle-button compact" id="subscriptionCalendarNext" type="button" aria-label="Next month">›</button>
+          </div>
+          <div class="calendar-weekdays" aria-hidden="true">
+            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+          </div>
+          <div class="subscription-calendar" id="subscriptionCalendarGrid"></div>
+        </section>
+      </section>
+
+      <section class="screen page-screen editor-overlay" id="screen-subscription-edit">
+        <div class="editor-sheet subscription-editor-sheet" role="dialog" aria-modal="true" aria-labelledby="subscriptionEditorTitle">
+          <header class="page-header">
+            <button class="text-button" id="cancelSubscriptionEdit" type="button">Cancel</button>
+            <h1 id="subscriptionEditorTitle">New subscription</h1>
+            <span></span>
+          </header>
+
+          <section class="form-card">
+          <label class="field-label" for="subscriptionName">Name</label>
+          <div class="suggest-wrap">
+            <input id="subscriptionName" type="text" placeholder="Netflix, phone plan…" autocomplete="off" />
+            <div class="suggestions" id="subscriptionSuggestions"></div>
+          </div>
+
+          <div class="grid-two">
+            <div>
+              <label class="field-label" for="subscriptionAmount">Amount</label>
+              <input id="subscriptionAmount" type="text" inputmode="decimal" placeholder="0.00" autocomplete="off" />
+            </div>
+            <div>
+              <label class="field-label" for="subscriptionCurrency">Currency</label>
+              <select id="subscriptionCurrency">
+                <option value="AUD">AUD</option>
+                <option value="INR">INR</option>
+              </select>
+            </div>
+          </div>
+
+          <label class="field-label" for="subscriptionFrequency">Frequency</label>
+          <select id="subscriptionFrequency">
+            <option value="weekly">Weekly</option>
+            <option value="fortnightly">Fortnightly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+          <div class="monthly-preview" id="subscriptionMonthlyPreview">Monthly equivalent $0</div>
+
+          <div class="grid-two">
+            <div>
+              <label class="field-label" for="subscriptionNextDate">Next payment date</label>
+              <input id="subscriptionNextDate" type="date" />
+            </div>
+            <div>
+              <label class="field-label" for="subscriptionCategory">Category</label>
+              <select id="subscriptionCategory"></select>
+            </div>
+          </div>
+
+          <label class="field-label" for="subscriptionWebsite">Logo</label>
+          <div class="logo-editor-row">
+            <div class="subscription-logo-preview" id="subscriptionLogoPreview">S</div>
+            <input id="subscriptionWebsite" type="url" inputmode="url" placeholder="Company website URL" autocomplete="off" />
+            <button class="secondary-button" id="findSubscriptionLogo" type="button">Find</button>
+          </div>
+          <label class="text-button logo-file-label" for="subscriptionLogoFile">Choose image instead</label>
+          <input id="subscriptionLogoFile" class="hidden-file" type="file" accept="image/png,image/jpeg,image/webp" />
+
+          <label class="field-label" for="subscriptionNote">Note</label>
+          <input id="subscriptionNote" type="text" placeholder="Optional" autocomplete="off" />
+
+          <label class="toggle-row" for="subscriptionActive">
+            <span>
+              <strong>Active</strong>
+              <small>Include in totals and calendar</small>
+            </span>
+            <input id="subscriptionActive" class="switch-input" type="checkbox" checked />
+          </label>
+
+          <button class="danger-button full-width" id="deleteSubscription" type="button" hidden>Delete subscription</button>
+          <button class="primary-button full-width sheet-save" id="saveSubscription" type="button">Save subscription</button>
+          </section>
+        </div>
       </section>
 
       <section class="screen page-screen" id="screen-settings">
@@ -175,69 +311,90 @@
           <h1>Settings</h1>
         </header>
 
-        <section class="form-card">
-          <label class="field-label" for="monthlyBudget">Monthly budget</label>
-          <div class="money-input">
-            <span>$</span>
-            <input id="monthlyBudget" type="number" min="0" step="0.01" inputmode="decimal" />
+        <section class="form-card settings-section settings-primary">
+          <h2>Money</h2>
+          <label class="field-label" for="defaultCurrency">Displayed currency</label>
+          <select id="defaultCurrency">
+            <option value="AUD">AUD — Australian dollar</option>
+            <option value="INR">INR — Indian rupee</option>
+          </select>
+          <div class="grid-two">
+            <div>
+              <label class="field-label" for="monthlyBudget">AUD monthly budget</label>
+              <div class="money-input">
+                <span>$</span>
+                <input id="monthlyBudget" type="number" min="0" step="0.01" inputmode="decimal" />
+              </div>
+            </div>
+            <div>
+              <label class="field-label" for="monthlyBudgetInr">INR monthly budget</label>
+              <div class="money-input">
+                <span>₹</span>
+                <input id="monthlyBudgetInr" type="number" min="0" step="0.01" inputmode="decimal" />
+              </div>
+            </div>
           </div>
-          <button class="primary-button full-width" id="saveSettings" type="button">Save settings</button>
+          <p class="helper-text settings-saved-note">Changes save automatically</p>
         </section>
 
-        <section class="form-card">
-          <div class="setting-row">
-            <div>
-              <h2>Appearance</h2>
-              <p class="helper-text compact">Choose a quiet mode and accent.</p>
-            </div>
-            <button class="theme-toggle" id="themeToggle" type="button" aria-pressed="false">
-              <span class="theme-toggle-dot"></span>
-              <span id="themeToggleText">Auto</span>
-            </button>
+        <section class="form-card settings-section">
+          <h2>Appearance</h2>
+          <div class="theme-picker" id="themePicker" aria-label="Theme">
+            <button type="button" data-theme-choice="auto">Auto</button>
+            <button type="button" data-theme-choice="light">Light</button>
+            <button type="button" data-theme-choice="dark">Dark</button>
           </div>
+          <div class="section-label">Accent colour</div>
           <div class="accent-picker" id="accentPicker" aria-label="Accent colour"></div>
         </section>
 
-        <section class="form-card">
-          <h2>Category budgets</h2>
-          <p class="helper-text">Set optional monthly limits for key categories.</p>
+        <section class="form-card settings-section">
+          <h2>Subscriptions</h2>
+          <label class="toggle-row settings-toggle" for="subscriptionReminders">
+            <span>
+              <strong>Payment reminders</strong>
+              <small>Notify one day before at 9:00 AM</small>
+            </span>
+            <input id="subscriptionReminders" class="switch-input" type="checkbox" checked />
+          </label>
+        </section>
+
+        <details class="form-card settings-details">
+          <summary>
+            <h2>Category budgets</h2>
+            <span class="heading-total" id="categoryBudgetsSummary">No limits</span>
+          </summary>
+          <p class="helper-text">Optional monthly limits for key categories.</p>
           <div class="budget-list" id="categoryBudgetList"></div>
           <button class="secondary-button full-width" id="saveCategoryBudgets" type="button">Save category budgets</button>
-        </section>
+        </details>
 
-        <section class="form-card">
-          <h2>Recurring bills</h2>
-          <p class="helper-text">Track regular commitments before the month gets away from you.</p>
-          <div class="recurring-grid">
-            <input id="billName" type="text" placeholder="Name" autocomplete="off" />
-            <input id="billAmount" type="text" inputmode="decimal" placeholder="Amount" autocomplete="off" />
-            <select id="billCategory"></select>
-            <input id="billDay" type="number" min="1" max="31" placeholder="Day" />
-          </div>
-          <button class="secondary-button full-width" id="addBill" type="button">Add bill</button>
-          <div class="bill-list" id="billList"></div>
-        </section>
-
-        <section class="form-card">
+        <section class="form-card settings-section settings-data">
           <h2>Data</h2>
-          <p class="helper-text">Your data stays in this browser on this device. Export a backup regularly.</p>
           <div class="grid-two">
-            <button class="secondary-button" id="exportJson" type="button">Export backup</button>
-            <label class="secondary-button file-label" for="importJson">Import backup</label>
+            <button class="secondary-button" id="exportJson" type="button">Export</button>
+            <label class="secondary-button file-label" for="importJson">Import</label>
             <input id="importJson" class="hidden-file" type="file" accept="application/json,.json" />
-            <button class="secondary-button" id="exportCsv" type="button">Export CSV</button>
-            <button class="danger-button" id="resetData" type="button">Reset all</button>
           </div>
         </section>
 
-        <section class="form-card">
-          <h2>Categories</h2>
-          <p class="helper-text">Used for monthly breakdowns in Analytics. They are not shown on Home.</p>
+        <details class="form-card settings-details">
+          <summary>
+            <h2>Categories</h2>
+            <span class="heading-total" id="categoriesSummary">0 categories</span>
+          </summary>
+          <p class="helper-text">Used for monthly breakdowns in Analytics.</p>
           <div class="category-edit-list" id="categoryEditList"></div>
           <div class="add-category-row">
             <input id="newCategoryName" type="text" placeholder="New category name" />
             <button class="secondary-button" id="addCategory" type="button">Add</button>
           </div>
+        </details>
+
+        <section class="form-card settings-section settings-danger">
+          <h2>Reset app</h2>
+          <p class="helper-text">Permanently remove all budgets, transactions and subscriptions.</p>
+          <button class="danger-button full-width" id="resetData" type="button">Reset all data</button>
         </section>
       </section>
     </main>
@@ -254,9 +411,9 @@
       <button type="button" data-route="add" class="nav-add">
         <svg class="nav-add-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
       </button>
-      <button type="button" data-route="history" class="nav-button">
-        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M6 7h12M6 12h12M6 17h12"/></svg>
-        <small>History</small>
+      <button type="button" data-route="subscriptions" class="nav-button">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M7 3v3m10-3v3M5 5h14v15H5zM5 9h14"/></svg>
+        <small>Subscriptions</small>
       </button>
       <button type="button" data-route="settings" class="nav-button">
         <svg class="nav-icon" viewBox="0 0 24 24">
@@ -269,8 +426,9 @@
   </div>
 
   <div class="toast" id="toast"></div>
-  <script src="app.js?v=8.0"></script>
-  <script src="theme.js?v=8.0"></script>
+  <script src="app.js?v=10.4"></script>
+  <script src="theme.js?v=10.4"></script>
+  <script src="merchant-logos.js?v=2.1" data-auto-merchant-logos></script>
 
   <script>
     (function () {
@@ -286,8 +444,8 @@
         const style = document.createElement("style");
         style.textContent = `
           .bar-chart {
-            height: 178px !important;
-            margin-top: 14px !important;
+            height: 138px !important;
+            margin-top: 8px !important;
             padding: 0 !important;
             border-bottom: 0 !important;
             display: block !important;
@@ -300,7 +458,7 @@
           }
           .minimal-svg {
             width: 100%;
-            height: 120px;
+            height: 88px;
             overflow: visible;
           }
           .minimal-baseline {
@@ -311,7 +469,7 @@
           .minimal-line {
             fill: none;
             stroke: var(--accent);
-            stroke-width: 3.25;
+            stroke-width: 2.25;
             stroke-linecap: round;
             stroke-linejoin: round;
             vector-effect: non-scaling-stroke;
@@ -319,13 +477,13 @@
           .minimal-dot {
             fill: var(--surface);
             stroke: var(--accent);
-            stroke-width: 2.5;
+            stroke-width: 1.75;
             vector-effect: non-scaling-stroke;
           }
           .minimal-dot.peak {
             fill: var(--accent);
             stroke: var(--surface);
-            stroke-width: 3;
+            stroke-width: 2;
           }
           .minimal-labels {
             display: grid;
@@ -350,7 +508,7 @@
             font-weight: 650;
           }
           @media (max-width: 380px) {
-            .bar-chart { height: 170px !important; }
+            .bar-chart { height: 132px !important; }
             .minimal-summary { font-size: 11px; }
           }
         `;
@@ -371,10 +529,11 @@
             if (index >= 0) buckets[index] += Number(expense.amount || 0);
           }
 
-          const maxValue = Math.max(1, ...buckets);
-          const peakIndex = buckets.indexOf(maxValue);
+          const peakValue = Math.max(...buckets);
+          const maxValue = Math.max(1, peakValue);
+          const peakIndex = peakValue > 0 ? buckets.indexOf(peakValue) : -1;
           const width = 320;
-          const height = 120;
+          const height = 88;
           const padX = 22;
           const padTop = 12;
           const padBottom = 22;
@@ -392,13 +551,13 @@
 
           chart.innerHTML = `
             <div class="minimal-chart" role="img" aria-label="Weekly spending line chart.">
-              <svg class="minimal-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
+              <svg class="minimal-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
                 <line class="minimal-baseline" x1="${padX}" y1="${baseY}" x2="${width - padX}" y2="${baseY}" />
                 <polyline class="minimal-line" points="${linePoints}" />
-                ${points.map((point, index) => `<circle class="minimal-dot ${index === peakIndex && point.value > 0 ? "peak" : ""}" cx="${point.x}" cy="${point.y}" r="${index === peakIndex && point.value > 0 ? 4 : 3.2}" />`).join("")}
+                ${points.map((point, index) => `<circle class="minimal-dot ${index === peakIndex ? "peak" : ""}" cx="${point.x}" cy="${point.y}" r="${index === peakIndex ? 3.25 : 2.5}" />`).join("")}
               </svg>
               <div class="minimal-labels">${labels.map(label => `<span>${label}</span>`).join("")}</div>
-              <div class="minimal-summary">Highest week <strong>${labels[peakIndex]}</strong> - <strong>${money(buckets[peakIndex])}</strong></div>
+              <div class="minimal-summary">${peakIndex < 0 ? "No spending yet" : `Highest week <strong>${labels[peakIndex]}</strong> - <strong>${money(buckets[peakIndex])}</strong>`}</div>
             </div>
           `;
         };

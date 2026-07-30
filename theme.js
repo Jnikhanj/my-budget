@@ -10,8 +10,7 @@
     { id: "teal", label: "Teal", color: "#0f766e" },
     { id: "coral", label: "Coral", color: "#e0573f" }
   ];
-  const button = document.getElementById("themeToggle");
-  const label = document.getElementById("themeToggleText");
+  const themePicker = document.getElementById("themePicker");
   const metaTheme = document.querySelector("meta[name='theme-color']");
   const accentPicker = document.getElementById("accentPicker");
 
@@ -33,8 +32,11 @@
     const theme = values.includes(value) ? value : "auto";
     const resolved = theme === "auto" ? systemTheme() : theme;
     document.body.dataset.theme = resolved;
-    if (button) button.setAttribute("aria-pressed", String(resolved === "dark"));
-    if (label) label.textContent = theme === "auto" ? "Auto" : theme === "dark" ? "Dark" : "Light";
+    themePicker?.querySelectorAll("[data-theme-choice]").forEach(button => {
+      const selected = button.dataset.themeChoice === theme;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
     if (metaTheme) metaTheme.setAttribute("content", resolved === "dark" ? "#111111" : "#f7f7f5");
   }
 
@@ -44,11 +46,6 @@
     accentPicker?.querySelectorAll("[data-accent]").forEach(button => {
       button.classList.toggle("is-selected", button.dataset.accent === accent.id);
     });
-  }
-
-  function nextTheme() {
-    const current = savedTheme();
-    return values[(values.indexOf(current) + 1) % values.length];
   }
 
   applyTheme(savedTheme());
@@ -64,10 +61,11 @@
     applyAccent(savedAccent());
   }
 
-  button?.addEventListener("click", () => {
-    const theme = nextTheme();
-    localStorage.setItem(THEME_KEY, theme);
-    applyTheme(theme);
+  themePicker?.addEventListener("click", event => {
+    const option = event.target.closest("[data-theme-choice]");
+    if (!option) return;
+    localStorage.setItem(THEME_KEY, option.dataset.themeChoice);
+    applyTheme(option.dataset.themeChoice);
   });
 
   accentPicker?.addEventListener("click", event => {
@@ -97,8 +95,6 @@
       inset: 0;
       z-index: 80;
       background: rgba(17, 18, 23, 0.32);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
       display: grid;
       align-items: end;
       padding: 14px;
@@ -109,9 +105,9 @@
       margin: 0 auto calc(env(safe-area-inset-bottom) + 4px);
       background: var(--card);
       color: var(--text);
-      border-radius: 28px;
-      border: 1px solid rgba(255,255,255,0.7);
-      padding: 18px;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      padding: 16px;
       box-shadow: 0 24px 70px rgba(17, 18, 23, 0.28);
     }
     .tx-modal-header {
@@ -119,10 +115,10 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
     }
     .tx-modal-title {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 820;
       letter-spacing: -0.04em;
     }
@@ -137,18 +133,18 @@
       line-height: 1;
     }
     .tx-grid-two { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
-    .tx-button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 16px; }
+    .tx-button-row { display: grid; gap: 8px; margin-top: 12px; }
     .tx-delete-button {
-      min-height: 50px;
-      border-radius: 23px;
+      min-height: 42px;
+      border-radius: 12px;
       border: 1px solid rgba(220, 82, 71, 0.20);
       color: var(--danger);
       background: rgba(220, 82, 71, 0.08);
       font-weight: 790;
     }
     .tx-save-button {
-      min-height: 50px;
-      border-radius: 23px;
+      min-height: 46px;
+      border-radius: 12px;
       border: 0;
       color: white;
       background: #111217;
@@ -215,9 +211,15 @@
         </div>
 
         <label class="field-label" for="txAmount">Amount</label>
-        <div class="amount-field">
-          <span>$</span>
-          <input id="txAmount" type="text" inputmode="decimal" autocomplete="off" />
+        <div class="amount-currency-row">
+          <div class="amount-field">
+            <span id="txCurrencySymbol">$</span>
+            <input id="txAmount" type="text" inputmode="decimal" autocomplete="off" />
+          </div>
+          <select id="txCurrency" aria-label="Currency">
+            <option value="AUD">AUD</option>
+            <option value="INR">INR</option>
+          </select>
         </div>
 
         <label class="field-label" for="txMerchant">Merchant</label>
@@ -238,8 +240,8 @@
         <input id="txNote" type="text" placeholder="Optional" autocomplete="off" />
 
         <div class="tx-button-row">
-          <button class="tx-delete-button" id="txDelete" type="button">Delete</button>
           <button class="tx-save-button" id="txSave" type="button">Save changes</button>
+          <button class="tx-delete-button" id="txDelete" type="button">Delete transaction</button>
         </div>
       </section>
     `;
@@ -251,6 +253,9 @@
     backdrop.querySelector("#txClose").addEventListener("click", closeEditor);
     backdrop.querySelector("#txSave").addEventListener("click", saveEditedTransaction);
     backdrop.querySelector("#txDelete").addEventListener("click", deleteEditedTransaction);
+    backdrop.querySelector("#txCurrency").addEventListener("change", event => {
+      backdrop.querySelector("#txCurrencySymbol").textContent = event.target.value === "INR" ? "₹" : "$";
+    });
     return backdrop;
   }
 
@@ -261,6 +266,8 @@
     const backdrop = ensureEditor();
 
     backdrop.querySelector("#txAmount").value = expense.amount ?? "";
+    backdrop.querySelector("#txCurrency").value = typeof normalizeCurrency === "function" ? normalizeCurrency(expense.currency) : "AUD";
+    backdrop.querySelector("#txCurrencySymbol").textContent = backdrop.querySelector("#txCurrency").value === "INR" ? "₹" : "$";
     backdrop.querySelector("#txMerchant").value = expense.merchant || "";
     backdrop.querySelector("#txCategory").innerHTML = categoryOptions(expense.categoryId);
     backdrop.querySelector("#txDate").value = expense.date || (typeof todayISO === "function" ? todayISO() : "");
@@ -268,7 +275,6 @@
 
     backdrop.hidden = false;
     document.body.classList.add("tx-modal-open");
-    setTimeout(() => backdrop.querySelector("#txAmount")?.focus(), 120);
   }
 
   function closeEditor() {
@@ -298,6 +304,9 @@
 
     expense.amount = amount;
     expense.merchant = merchant;
+    expense.currency = typeof normalizeCurrency === "function"
+      ? normalizeCurrency(backdrop.querySelector("#txCurrency").value)
+      : backdrop.querySelector("#txCurrency").value;
     expense.categoryId = category.id;
     expense.categoryName = category.name;
     expense.date = backdrop.querySelector("#txDate").value || expense.date;
@@ -335,7 +344,7 @@
           <div class="row-title">${safe(expense.merchant)}</div>
           <div class="row-subtitle">${safe(formattedDate(expense.date))} · ${safe(expenseCategory(expense))}</div>
         </div>
-        <div class="row-amount">${typeof money === "function" ? money(expense.amount) : safe(expense.amount)}</div>
+        <div class="row-amount">${typeof money === "function" ? money(expense.amount, expense.currency) : safe(expense.amount)}</div>
       </div>
     `).join("");
   };
@@ -445,7 +454,8 @@
     const status = budgetStatus();
     $("analyticsSpent").textContent = money(status.spent);
     $("budgetMiniText").textContent = `${money(status.left)} available`;
-    $("budgetMiniPercent").textContent = `${Math.round(status.usedPercent)}%`;
+    $("budgetMiniPercent").textContent = `${Math.round(status.usedPercent)}% used`;
+    $("budgetMiniProgress").style.width = `${status.usedPercent}%`;
     renderWeeklyChart();
     renderInsights();
 
@@ -509,7 +519,7 @@
                 ${parseDate(expense.date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}${expense.note ? ` · ${safe(expense.note)}` : ""}
               </div>
             </div>
-            <div class="row-amount">${money(expense.amount)}</div>
+            <div class="row-amount">${money(expense.amount, expense.currency)}</div>
           </div>
         `).join("")}
       </div>
